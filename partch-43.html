@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wilson T41 Hex Keyboard - Partch 43-Tone</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at 50% 50%, #1a1a24 0%, #0d0d12 100%);
+      color: #E2E2E2;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: none;
+    }
+    h1 { 
+      position: absolute;
+      top: 20px;
+      margin: 0;
+      left: 200px;
+      color: #a0a0ff; 
+      font-weight: 300;
+      font-size: 24px;
+      z-index: 10;
+    }
+    .back-btn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: #fff;
+      text-decoration: none;
+      background: rgba(255,255,255,0.1);
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      z-index: 10;
+    }
+    
+    #hex-container {
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    #ui-panel {
+      position: absolute;
+      top: 70px;
+      max-height: calc(100vh - 100px);
+      overflow-y: auto;
+      right: 30px;
+      background: rgba(30, 30, 40, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    #toggle-ui-btn {
+      position: absolute;
+      bottom: 30px;
+      right: 30px;
+      background: rgba(30, 30, 40, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+      font-size: 20px;
+      cursor: pointer;
+      z-index: 20;
+      backdrop-filter: blur(8px);
+      transition: background 0.2s;
+    }
+    #toggle-ui-btn:hover {
+      background: rgba(60, 60, 80, 0.9);
+    }
+    
+    .ui-title {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #8a8a9a;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .switch-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      font-size: 14px;
+    }
+
+    .toggle-container {
+      display: flex;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .toggle-btn {
+      background: transparent;
+      border: none;
+      color: #6a6a7a;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      transition: all 0.2s;
+    }
+
+    .toggle-btn.active {
+      background: #3F88C5;
+      color: white;
+    }
+
+    .input-group {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .input-group label {
+      font-size: 0.9rem;
+      color: #ddd;
+    }
+
+    .input-group input {
+      width: 80px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      padding: 5px 10px;
+      color: #fff;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-group input:focus {
+      border-color: #a0a0ff;
+    }
+
+    /* Target the text nodes in the SVG */
+    #hex-container svg text {
+      font-size: 8.5px !important; 
+    }
+  
+    /* Performance Mode */
+    body.performance-mode > *:not(#hex-container):not(#mode-toggle):not(script) {
+      display: none !important;
+    }
+    #mode-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      background: linear-gradient(135deg, #4b6cb7, #182848);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      transition: all 0.2s;
+    }
+    #mode-toggle:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+
+    /* Bloqueo de hexágonos en Modo Edición */
+    body.edit-locked:not(.performance-mode) #hex-container g {
+      pointer-events: none;
+    }
+  </style>
+
+</head>
+<body class="edit-locked">
+  <a href="index.html" class="back-btn">← Volver al Menú</a>
+  <h1>Harry Partch: 43-Tone Keyboard (Erv Wilson)</h1>
+  
+  <div id="hex-container"></div>
+
+  <button id="toggle-ui-btn" title="Mostrar/Ocultar Controles">⚙️</button>
+
+  <div id="ui-panel" style="display: flex;">
+    <div class="ui-title">Reference Degree</div>
+    <div class="input-group">
+      <select id="reference-degree" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 4px; font-family: inherit; font-size: 0.9rem;">
+        <option value="-1">None (Default Colors)</option>
+      </select>
+    </div>
+
+
+    <div class="ui-title" style="margin-top: 10px;">Highlight Sets / Chords (Real Degrees 0-42)</div>
+    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+      <input type="text" id="highlight-input" placeholder="e.g., 0, 4, 7" style="flex: 1; padding: 6px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; font-family: monospace;">
+      <button class="toggle-btn" id="btn-highlight" style="background: #2b8a3e; color: #fff;">Highlight</button>
+      <button class="toggle-btn" id="btn-clear-highlight" style="background: #a94442; color: #fff;">Clear</button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; width: 100%; gap: 0.5rem; margin-top: 10px;">
+      <div class="ui-title">Colecciones y Subsets</div>
+      <select id="collection-structure-select" style="padding: 0.75rem; background: #222; color: white; border: 1px solid #444; border-radius: 4px; outline: none;">
+          <option value="">-- Seleccionar Colección --</option>
+          <optgroup label="Secuencia Ptolemaica">
+              <option value="Pentatonic">Escala pentatónica</option>
+              <option value="Diatonic">Escala diatónica</option>
+              <option value="Tetrachord_Major">Tetracordio Mayor</option>
+              <option value="Tetrachord_Major_Utonal">Tetracordio Mayor (Recíproco)</option>
+              <option value="Tetrachord_Minor">Tetracordio Menor</option>
+              <option value="Tetrachord_Minor_Utonal">Tetracordio Menor (Recíproco)</option>
+          </optgroup>
+          <optgroup label="Géneros de Ptolomeo">
+              <option value="Archytas_Enharmonic">Enarmónico de Arquitas</option>
+              <option value="Archytas_Enharmonic_Utonal">Enarmónico de Arquitas (Recíproco)</option>
+              <option value="Archytas_Chromatic">Cromático de Arquitas</option>
+              <option value="Archytas_Chromatic_Utonal">Cromático de Arquitas (Recíproco)</option>
+              <option value="Ptolemy_Soft_Chromatic">Cromático blando de Ptolomeo</option>
+              <option value="Ptolemy_Soft_Chromatic_Utonal">Cromático blando de Ptolomeo (Recíproco)</option>
+              <option value="Ptolemy_Tense_Chromatic">Cromático tenso de Ptolomeo</option>
+              <option value="Ptolemy_Tense_Chromatic_Utonal">Cromático tenso de Ptolomeo (Recíproco)</option>
+              <option value="Archytas_Ptolemy_Tonic_Diatonic">Diatónico tónico de Arquitas/Ptolomeo</option>
+              <option value="Archytas_Ptolemy_Tonic_Diatonic_Utonal">Diatónico tónico de Arquitas/Ptolomeo (Recíproco)</option>
+              <option value="Didymus_Diatonic">Diatónico de Dídimo</option>
+              <option value="Didymus_Diatonic_Utonal">Diatónico de Dídimo (Recíproco)</option>
+              <option value="Ptolemy_Soft_Diatonic">Diatónico blando de Ptolomeo</option>
+              <option value="Ptolemy_Soft_Diatonic_Utonal">Diatónico blando de Ptolomeo (Recíproco)</option>
+              <option value="Ptolemy_Ditonic_Diatonic">Diatónico ditónico de Ptolomeo</option>
+              <option value="Ptolemy_Ditonic_Diatonic_Utonal">Diatónico ditónico de Ptolomeo (Recíproco)</option>
+              <option value="Ptolemy_Tense_Diatonic">Diatónico tenso de Ptolomeo</option>
+              <option value="Ptolemy_Tense_Diatonic_Utonal">Diatónico tenso de Ptolomeo (Recíproco)</option>
+              <option value="Ptolemy_Even_Diatonic">Diatónico parejo de Ptolomeo</option>
+              <option value="Ptolemy_Even_Diatonic_Utonal">Diatónico parejo de Ptolomeo (Recíproco)</option>
+          </optgroup>
+          <optgroup label="Escalas Históricas y Otras Culturas">
+              <option value="Didymus_Chromatic_Scale">Escala Cromática de Dídimo</option>
+              <option value="Olympos_Hexatonic">Hexatónica de Olympos</option>
+              <option value="Ling_Lun_Pentatonic">Pentatónica de Ling Lun</option>
+              <option value="Scholars_Lute">Escala del Lute del Sabio (Qin)</option>
+          </optgroup>
+          <optgroup label="Colecciones Originales de Partch">
+              <option value="Tonality_Diamond_29">Diamante de Tonalidad de Límite 11 (29 tonos)</option>
+              <option value="Monophonic_43">Escala Monofónica Completa (43 tonos)</option>
+          </optgroup>
+          <optgroup label="Otonalidades del Diamante">
+              <option value="Otonalities">Acordes Otonales (1, 3, 5, 7, 9, 11)</option>
+          </optgroup>
+          <optgroup label="Utonalidades del Diamante">
+              <option value="Utonalities">Acordes Utonales (1, 3, 5, 7, 9, 11)</option>
+          </optgroup>
+      </select>
+      
+      <select id="collection-set-select" disabled style="padding: 0.75rem; background: #222; color: white; border: 1px solid #444; border-radius: 4px; outline: none; margin-top: 0.5rem; margin-bottom: 10px;">
+          <option value="">-- Select set --</option>
+      </select>
+    </div>
+
+    <div class="ui-title" style="margin-top: 10px;">Octaves</div>
+    <div class="switch-group" style="justify-content: flex-start; gap: 15px;">
+      <label style="color: #ddd; font-size: 0.9rem;"><input type="checkbox" id="toggle-octave-down" checked> -1 (Lower)</label>
+      <label style="color: #ddd; font-size: 0.9rem;"><input type="checkbox" id="toggle-octave-up" checked> +1 (Upper)</label>
+    </div>
+
+    <div class="ui-title" style="margin-top: 10px;">Split Keys Toggles</div>
+    
+    <div class="switch-group">
+      <span>Grado 6</span>
+      <div class="toggle-container">
+        <button class="toggle-btn active" id="btn-g1-a">11/10</button>
+        <button class="toggle-btn" id="btn-g1-b">10/9</button>
+      </div>
+    </div>
+    
+    <div class="switch-group">
+      <span>Grado 35</span>
+      <div class="toggle-container">
+        <button class="toggle-btn active" id="btn-g2-a">9/5</button>
+        <button class="toggle-btn" id="btn-g2-b">20/11</button>
+      </div>
+    </div>
+    
+    <div id="osc-container" style="margin-top: 15px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+      <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 1rem; display: flex; justify-content: space-between; align-items: center;">
+        OSC Connection
+        <div style="display: flex; gap: 5px;">
+           <span id="osc-led-send" style="width: 10px; height: 10px; border-radius: 50%; background: #ff9b9b; display: inline-block;"></span>
+           <span id="osc-led-link" style="width: 10px; height: 10px; border-radius: 50%; background: #ff9b9b; display: inline-block;"></span>
+        </div>
+      </h3>
+      <div class="input-group">
+        <label for="osc-ip">Target IP</label>
+        <input type="text" id="osc-ip" value="127.0.0.1" style="width: 100px;">
+      </div>
+      <div class="input-group">
+        <label for="osc-port">Target UDP Port</label>
+        <input type="number" id="osc-port" value="57120" style="width: 100px;">
+      </div>
+      <div class="input-group">
+        <label for="osc-base">Base Root Float</label>
+        <input type="number" id="osc-base" value="172.0" step="0.1" style="width: 100px;">
+      </div>
+      <div class="input-group" style="margin-top: 10px;">
+        <label for="osc-octave">Octave Shift (Host)</label>
+        <select id="osc-octave" style="width: 100px; padding: 2px;">
+            <option value="3.0">3.0</option>
+            <option value="2.0">2.0</option>
+            <option value="1.0">1.0</option>
+            <option value="0.0" selected>0.0</option>
+            <option value="-1.0">-1.0</option>
+            <option value="-2.0">-2.0</option>
+            <option value="-3.0">-3.0</option>
+          </select>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+        <label style="color: #ddd; font-size: 0.9rem; flex: 1;"><input type="checkbox" id="osc-toggle"> Enable OSC</label>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button id="btn-panic-notes" style="flex: 1; background: #d9534f; border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px; font-size: 0.8rem;">All Notes Off</button>
+        <button id="btn-panic-sound" style="flex: 1; background: #c9302c; border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px; font-size: 0.8rem;">All Sound Off</button>
+      </div>
+      <div id="osc-monitor" style="margin-top: 10px; padding: 8px; background: #000; color: #0f0; font-family: monospace; font-size: 0.75rem; border-radius: 4px; height: 40px; overflow-y: auto;">
+        Esperando WebSocket...
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initPartchModule, splitStates, renderPartchKeyboard, PARTCH_DEGREES, activeHighlightSet } from './partch.js';
+    import { PARTCH_COLLECTIONS } from './partch-collections.js';
+
+    // Initialize the module
+    initPartchModule('hex-container');
+
+    // Populate Reference Degree
+    const refSelect = document.getElementById("reference-degree");
+    PARTCH_DEGREES.forEach(d => {
+      const opt = document.createElement("option");
+      opt.value = d.degree;
+      opt.textContent = `Grado ${d.degree} (${d.ratio})`;
+      refSelect.appendChild(opt);
+    });
+
+    refSelect.addEventListener("change", (e) => {
+      splitStates.referenceDegree = parseInt(e.target.value);
+      renderPartchKeyboard();
+    });
+
+    // UI Logic for toggles
+    function setupToggle(groupId, btnA, btnB) {
+      document.getElementById(btnA).addEventListener('click', (e) => {
+        splitStates[groupId] = "A";
+        e.target.classList.add('active');
+        document.getElementById(btnB).classList.remove('active');
+        renderPartchKeyboard();
+      });
+      
+      document.getElementById(btnB).addEventListener('click', (e) => {
+        splitStates[groupId] = "B";
+        e.target.classList.add('active');
+        document.getElementById(btnA).classList.remove('active');
+        renderPartchKeyboard();
+      });
+    }
+
+    setupToggle(1, 'btn-g1-a', 'btn-g1-b');
+
+    setupToggle(2, 'btn-g2-a', 'btn-g2-b');
+
+    // --- Highlight Sets Logic ---
+    document.getElementById("btn-highlight").addEventListener("click", () => {
+      const inputVal = document.getElementById("highlight-input").value;
+      if (!inputVal.trim()) return;
+      
+      const set = inputVal.split(',')
+                          .map(s => parseInt(s.trim(), 10))
+                          .filter(n => !isNaN(n) && n >= 0 && n <= 42);
+                          
+      activeHighlightSet.length = 0; // clear array
+      activeHighlightSet.push(...set); // add new items
+      renderPartchKeyboard();
+    });
+
+    document.getElementById("btn-clear-highlight").addEventListener("click", () => {
+      document.getElementById("highlight-input").value = "";
+      activeHighlightSet.length = 0;
+      
+      const structureSelect = document.getElementById("collection-structure-select");
+      const setSelect = document.getElementById("collection-set-select");
+      if (structureSelect && setSelect) {
+        structureSelect.value = "";
+        setSelect.innerHTML = '<option value="">-- Seleccionar set --</option>';
+        setSelect.disabled = true;
+      }
+      
+      renderPartchKeyboard();
+    });
+
+    const structureSelect = document.getElementById("collection-structure-select");
+    const setSelect = document.getElementById("collection-set-select");
+
+    structureSelect.addEventListener("change", (e) => {
+        const selectedStructure = e.target.value;
+        const btnManualHighlight = document.getElementById("btn-highlight");
+        const manualHighlightInput = document.getElementById("highlight-input");
+
+        setSelect.innerHTML = '<option value="">-- Seleccionar set --</option>';
+        if (!selectedStructure) {
+            setSelect.disabled = true;
+            document.getElementById("btn-clear-highlight").click();
+            return;
+        }
+
+        const sets = PARTCH_COLLECTIONS[selectedStructure];
+        if (sets && sets.length > 0) {
+            setSelect.disabled = false;
+            sets.forEach((set, index) => {
+                const opt = document.createElement("option");
+                opt.value = index.toString();
+                opt.textContent = set.name;
+                setSelect.appendChild(opt);
+            });
+
+            setSelect.value = "0";
+            
+            manualHighlightInput.value = sets[0].degrees.join(', ');
+            btnManualHighlight.click();
+        } else {
+            setSelect.disabled = true;
+        }
+    });
+
+    setSelect.addEventListener("change", (e) => {
+        const selectedStructure = structureSelect.value;
+        const selectedIndex = e.target.value;
+        const btnManualHighlight = document.getElementById("btn-highlight");
+        const manualHighlightInput = document.getElementById("highlight-input");
+
+        if (!selectedStructure || selectedIndex === "") {
+            document.getElementById("btn-clear-highlight").click();
+            return;
+        }
+
+        const sets = PARTCH_COLLECTIONS[selectedStructure];
+        const selectedSet = sets[parseInt(selectedIndex)];
+        
+        if (selectedSet) {
+            manualHighlightInput.value = selectedSet.degrees.join(', ');
+            btnManualHighlight.click();
+        }
+    });
+
+
+
+    // Toggle UI Panel Logic
+    document.getElementById("toggle-ui-btn").addEventListener("click", () => {
+      const panel = document.getElementById("ui-panel");
+      if (panel.style.display === "none") {
+        panel.style.display = "flex";
+      } else {
+        panel.style.display = "none";
+      }
+    });
+
+    // Octave Toggles Logic
+    document.getElementById("toggle-octave-down").addEventListener("change", (e) => {
+      splitStates.octaveDown = e.target.checked;
+      renderPartchKeyboard();
+    });
+    document.getElementById("toggle-octave-up").addEventListener("change", (e) => {
+      splitStates.octaveUp = e.target.checked;
+      renderPartchKeyboard();
+    });
+
+    // --- OSC WEBSOCKET & LOGIC ---
+    class OSCMessage {
+      constructor(address, types, args) {
+        this.address = address;
+        this.types = "," + types;
+        this.args = args;
+      }
+
+      encode() {
+        const addrBuf = this.stringToBuffer(this.address);
+        const typesBuf = this.stringToBuffer(this.types);
+        const argsBuf = this.argsToBuffer();
+
+        const totalSize = addrBuf.length + typesBuf.length + argsBuf.length;
+        const buffer = new Uint8Array(totalSize);
+        buffer.set(addrBuf, 0);
+        buffer.set(typesBuf, addrBuf.length);
+        buffer.set(argsBuf, addrBuf.length + typesBuf.length);
+        return buffer.buffer;
+      }
+
+      stringToBuffer(str) {
+        const content = new TextEncoder().encode(str);
+        const len = content.length + 1; // null terminator
+        const paddedLen = Math.ceil(len / 4) * 4;
+        const buffer = new Uint8Array(paddedLen);
+        buffer.set(content);
+        return buffer;
+      }
+
+      argsToBuffer() {
+        let size = 0;
+        const tChars = this.types.substring(1).split("");
+        tChars.forEach(t => { if (t==="i" || t==="f") size += 4; });
+        
+        const buffer = new ArrayBuffer(size);
+        const view = new DataView(buffer);
+        let offset = 0;
+        tChars.forEach((t, idx) => {
+          if (t === "i") { view.setInt32(offset, this.args[idx], false); offset += 4; }
+          else if (t === "f") { view.setFloat32(offset, this.args[idx], false); offset += 4; }
+        });
+        return new Uint8Array(buffer);
+      }
+    }
+
+    const oscStatus = {
+      enabled: false,
+      linked: false,
+      ip: "127.0.0.1",
+      port: 57120,
+      socket: null
+    };
+
+    const oscMonitor = document.getElementById("osc-monitor");
+    const oscLog = [];
+    
+    function updateOscMonitor(msg) {
+      oscLog.push(msg);
+      if (oscLog.length > 3) oscLog.shift();
+      if (oscMonitor) oscMonitor.innerHTML = oscLog.join("<br>");
+    }
+
+    function updateStatusVisuals() {
+      const ledSend = document.getElementById("osc-led-send");
+      if (ledSend) ledSend.style.background = oscStatus.enabled ? "#2b8a3e" : "#ff9b9b";
+      const ledLink = document.getElementById("osc-led-link");
+      if (ledLink) ledLink.style.background = oscStatus.linked ? "#2b8a3e" : "#ff9b9b";
+    }
+
+    function initWebSocket() {
+      if (oscStatus.socket) oscStatus.socket.close();
+      const wsUrl = `ws://${window.location.hostname || "localhost"}:8081`;
+      oscStatus.socket = new WebSocket(wsUrl);
+      oscStatus.socket.binaryType = "arraybuffer";
+
+      oscStatus.socket.onopen = () => {
+        oscStatus.linked = true;
+        updateStatusVisuals();
+        updateOscMonitor("Vínculo Bridge Establecido (WS)");
+      };
+
+      oscStatus.socket.onclose = () => {
+        oscStatus.linked = false;
+        updateStatusVisuals();
+        updateOscMonitor("Vínculo Bridge Perdido. Reintentando...");
+        setTimeout(initWebSocket, 5000);
+      };
+    }
+    initWebSocket();
+
+    window.dispatchOSC = function(address, types, args) {
+      const forcedTypes = types.replace(/i/g, "f");
+      const visualArgs = args.map(a => typeof a === "number" ? a.toFixed(2) : a).join(", ");
+      updateOscMonitor(`[${address}, ${visualArgs}]`);
+
+      if (oscStatus.enabled && oscStatus.linked && oscStatus.socket.readyState === WebSocket.OPEN) {
+        const msg = new OSCMessage(address, forcedTypes, args);
+        const packet = msg.encode();
+        
+        oscStatus.socket.send(JSON.stringify({
+          type: "osc",
+          ip: oscStatus.ip,
+          port: oscStatus.port,
+          message: Array.from(new Uint8Array(packet))
+        }));
+      }
+    };
+
+    document.getElementById("osc-ip").addEventListener("input", (e) => oscStatus.ip = e.target.value);
+    document.getElementById("osc-port").addEventListener("input", (e) => oscStatus.port = parseInt(e.target.value) || 0);
+    document.getElementById("osc-toggle").addEventListener("change", (e) => {
+      oscStatus.enabled = e.target.checked;
+      updateStatusVisuals();
+      updateOscMonitor(oscStatus.enabled ? "OSC Habilitado" : "OSC Deshabilitado");
+    });
+
+    document.getElementById("osc-octave").addEventListener("change", (e) => {
+      const val = parseFloat(e.target.value);
+      if (typeof window.dispatchOSC === 'function') {
+        window.dispatchOSC('/param/a/octave', 'f', [val]);
+      }
+    });
+
+    document.getElementById("btn-panic-notes").addEventListener("click", () => {
+      window.dispatchOSC('/allnotesoff', '', []);
+    });
+
+    document.getElementById("btn-panic-sound").addEventListener("click", () => {
+      window.dispatchOSC('/allsoundoff', '', []);
+    });
+
+    window.getOscBaseFloat = function() {
+      return parseFloat(document.getElementById("osc-base").value) || 172.0;
+    };
+
+    window.getActiveEdo = function() {
+      return 43; // El teclado Partch se maneja geométricamente como un sistema de 43 grados
+    };
+  </script>
+
+  <button id="mode-toggle">Modo de ejecución</button>
+  <script>
+    // Performance Mode Toggle
+    const modeToggleBtn = document.getElementById('mode-toggle');
+    if (modeToggleBtn) {
+      modeToggleBtn.addEventListener('click', () => {
+        document.body.classList.toggle('performance-mode');
+        if (document.body.classList.contains('performance-mode')) {
+          modeToggleBtn.textContent = 'Volver al Modo de edición';
+        } else {
+          modeToggleBtn.textContent = 'Modo de ejecución';
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>

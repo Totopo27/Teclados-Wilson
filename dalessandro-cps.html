@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D’Alessandro CPS Keyboard</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at 50% 50%, #1a1a24 0%, #0d0d12 100%);
+      color: #E2E2E2;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: none;
+    }
+    h1 { 
+      position: absolute;
+      top: 20px;
+      margin: 0;
+      left: 200px;
+      color: #a0a0ff; 
+      font-weight: 300;
+      font-size: 24px;
+      z-index: 10;
+    }
+    p { color: #aaa; text-align: center; }
+    .back-btn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: #fff;
+      text-decoration: none;
+      background: rgba(255,255,255,0.1);
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      z-index: 10;
+    }
+
+    #hex-container {
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    #ui-panel {
+      position: absolute;
+      top: 70px;
+      max-height: calc(100vh - 100px);
+      overflow-y: auto;
+      right: 30px;
+      background: rgba(30, 30, 40, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .ui-title {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #8a8a9a;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .switch-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      font-size: 14px;
+    }
+
+    .toggle-container {
+      display: flex;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .toggle-btn {
+      background: transparent;
+      border: none;
+      color: #6a6a7a;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      transition: all 0.2s;
+    }
+
+    .toggle-btn.active {
+      background: #3F88C5;
+      color: white;
+    }
+
+    #toggle-ui-btn {
+      position: absolute;
+      bottom: 30px;
+      right: 30px;
+      background: rgba(30, 30, 40, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+      font-size: 20px;
+      cursor: pointer;
+      z-index: 20;
+      backdrop-filter: blur(8px);
+      transition: background 0.2s;
+    }
+    #toggle-ui-btn:hover {
+      background: rgba(60, 60, 80, 0.9);
+    }
+
+    .input-group {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .input-group label {
+      font-size: 0.9rem;
+      color: #ddd;
+    }
+
+    .input-group input, .input-group select {
+      width: 80px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      padding: 5px 10px;
+      color: #fff;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-group input:focus, .input-group select:focus {
+      border-color: #a0a0ff;
+    }
+
+    /* Category colors */
+    .factor-toggle {
+      background: linear-gradient(135deg, #4b6cb7, #182848);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      transition: all 0.2s;
+      padding: 4px 8px;
+      font-size: 0.8rem;
+    }
+    .factor-toggle:hover { background: rgba(255, 255, 255, 0.2); }
+    .factor-toggle.active[data-category="0)6 Monany"] { background: #64748b; border-color: #94a3b8; box-shadow: 0 0 8px rgba(100, 116, 139, 0.5); }
+    .factor-toggle.active[data-category="1)6 Hexany"] { background: #f59e0b; border-color: #fbbf24; box-shadow: 0 0 8px rgba(245, 158, 11, 0.5); }
+    .factor-toggle.active[data-category="2)6 Pentadekany"] { background: #10b981; border-color: #34d399; box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); }
+    .factor-toggle.active[data-category="3)6 Eikosany"] { background: #3b82f6; border-color: #60a5fa; box-shadow: 0 0 8px rgba(59, 130, 246, 0.5); }
+    .factor-toggle.active[data-category="4)6 Pentadekany"] { background: #8b5cf6; border-color: #a78bfa; box-shadow: 0 0 8px rgba(139, 92, 246, 0.5); }
+    .factor-toggle.active[data-category="5)6 Hexany"] { background: #ec4899; border-color: #f472b6; box-shadow: 0 0 8px rgba(236, 72, 153, 0.5); }
+    .factor-toggle.active[data-category="6)6 Monany"] { background: #f43f5e; border-color: #fb7185; box-shadow: 0 0 8px rgba(244, 63, 94, 0.5); }
+    .factor-toggle.active[data-category="Pigtail"] { background: #d946ef; border-color: #e879f9; box-shadow: 0 0 8px rgba(217, 70, 239, 0.5); }
+  
+    /* Performance Mode */
+    body.performance-mode > *:not(#hex-container):not(#mode-toggle):not(script) {
+      display: none !important;
+    }
+    #mode-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      background: linear-gradient(135deg, #4b6cb7, #182848);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      transition: all 0.2s;
+    }
+    #mode-toggle:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+
+    /* Bloqueo de hexágonos en Modo Edición */
+    body.edit-locked:not(.performance-mode) #hex-container g {
+      pointer-events: none;
+    }
+  </style>
+
+</head>
+<body class="edit-locked">
+  <a href="index.html" class="back-btn">← Volver al Menú</a>
+  <h1>D’Alessandro keyboard layout</h1>
+  
+  <div id="hex-container"></div>
+
+  <button id="toggle-ui-btn" title="Mostrar/Ocultar Controles">⚙️</button>
+
+  <!-- Panel UI -->
+  <div id="ui-panel">
+
+    <div class="ui-title">Highlight Sets / Chords (Real Degrees 0-41)</div>
+    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+      <select id="cps-structure-select" style="flex: 1; padding: 6px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff;">
+        <optgroup label="CPS Subsets">
+          <option value="Eikosany">3)6 Eikosany</option>
+          <option value="2_6_Pentadekany">2)6 Pentadekany</option>
+          <option value="4_6_Pentadekany">4)6 Pentadekany</option>
+          <option value="1_6_Hexany">1)6 Hexany</option>
+          <option value="5_6_Hexany">5)6 Hexany</option>
+          <option value="0_6_Monany">0)6 Monany</option>
+          <option value="6_6_Monany">6)6 Monany</option>
+        </optgroup>
+        <optgroup label="Otras colecciones > Secuencia ptolemaica">
+          <option value="Pentatonic">Escala pentatónica</option>
+          <option value="Diatonic">Escala diatónica</option>
+          <option value="Tetrachord_Major">Tetracordio Mayor</option>
+          <option value="Tetrachord_Major_Utonal">Tetracordio Mayor (Recíproco)</option>
+          <option value="Tetrachord_Minor">Tetracordio Menor</option>
+          <option value="Tetrachord_Minor_Utonal">Tetracordio Menor (Recíproco)</option>
+        </optgroup>
+        <optgroup label="Otras colecciones > Géneros de Ptolomeo">
+          <option value="Archytas_Enharmonic">Enarmónico de Arquitas</option>
+          <option value="Archytas_Enharmonic_Utonal">Enarmónico de Arquitas (Recíproco)</option>
+          <option value="Archytas_Chromatic">Cromático de Arquitas</option>
+          <option value="Archytas_Chromatic_Utonal">Cromático de Arquitas (Recíproco)</option>
+          <option value="Ptolemy_Soft_Chromatic">Cromático blando de Ptolomeo</option>
+          <option value="Ptolemy_Soft_Chromatic_Utonal">Cromático blando de Ptolomeo (Recíproco)</option>
+          <option value="Ptolemy_Tense_Chromatic">Cromático tenso de Ptolomeo</option>
+          <option value="Ptolemy_Tense_Chromatic_Utonal">Cromático tenso de Ptolomeo (Recíproco)</option>
+          <option value="Archytas_Ptolemy_Tonic_Diatonic">Diatónico tónico de Arquitas/Ptolomeo</option>
+          <option value="Archytas_Ptolemy_Tonic_Diatonic_Utonal">Diatónico tónico de Arquitas/Ptolomeo (Recíproco)</option>
+          <option value="Didymus_Diatonic">Diatónico de Dídimo</option>
+          <option value="Didymus_Diatonic_Utonal">Diatónico de Dídimo (Recíproco)</option>
+          <option value="Ptolemy_Soft_Diatonic">Diatónico blando de Ptolomeo</option>
+          <option value="Ptolemy_Soft_Diatonic_Utonal">Diatónico blando de Ptolomeo (Recíproco)</option>
+          <option value="Ptolemy_Ditonic_Diatonic">Diatónico ditónico de Ptolomeo</option>
+          <option value="Ptolemy_Ditonic_Diatonic_Utonal">Diatónico ditónico de Ptolomeo (Recíproco)</option>
+          <option value="Ptolemy_Tense_Diatonic">Diatónico tenso de Ptolomeo</option>
+          <option value="Ptolemy_Tense_Diatonic_Utonal">Diatónico tenso de Ptolomeo (Recíproco)</option>
+          <option value="Ptolemy_Even_Diatonic">Diatónico equitativo de Ptolomeo</option>
+          <option value="Ptolemy_Even_Diatonic_Utonal">Diatónico equitativo de Ptolomeo (Recíproco)</option>
+        </optgroup>
+
+      </select>
+      <select id="cps-type-select" style="flex: 1; padding: 6px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff;">
+        <option value="">-- Type --</option>
+        <option value="Dyads">Dyads (90)</option>
+        <option value="Triads">Trianies (120)</option>
+        <option value="Tetrads">Tetranies (30)</option>
+        <option value="Hexanies">Hexanies (30)</option>
+        <option value="Dekanies">Dekanies (12)</option>
+      </select>
+    </div>
+    <div style="display: flex; margin-bottom: 15px;">
+      <select id="cps-set-select" disabled style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff;">
+        <option value="">-- Select Set --</option>
+      </select>
+    </div>
+    <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+      <input type="text" id="highlight-input" placeholder="e.g., 0, 4, 7" style="flex: 1; padding: 6px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; font-family: monospace;">
+      <button class="toggle-btn" id="btn-highlight" style="background: #2b8a3e; color: #fff;">Highlight</button>
+      <button class="toggle-btn" id="btn-clear-highlight" style="background: #a94442; color: #fff;">Clear</button>
+    </div>
+
+    <div class="ui-title">Octaves</div>
+    <div class="switch-group" style="justify-content: flex-start; gap: 15px; margin-bottom: 15px;">
+      <label style="color: #ddd; font-size: 0.9rem;"><input type="checkbox" id="toggle-octave-down" checked> -1 (Turquesa)</label>
+      <label style="color: #ddd; font-size: 0.9rem;"><input type="checkbox" id="toggle-octave-up" checked> +1 (Rojo)</label>
+      <label style="color: #ddd; font-size: 0.9rem;"><input type="checkbox" id="toggle-octave-up-2" checked> +2 (Dorado)</label>
+    </div>
+
+    <div class="ui-title" style="font-size: 11px;">0)6 through 6)6 1∙3∙5∙7∙9∙11 CPS</div>
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+        <div id="categoryFilters" style="display: flex; gap: 5px; flex-wrap: wrap; flex: 1;">
+            <button class="factor-toggle" data-category="0)6 Monany">0)6</button>
+            <button class="factor-toggle" data-category="1)6 Hexany">1)6</button>
+            <button class="factor-toggle" data-category="2)6 Pentadekany">2)6</button>
+            <button class="factor-toggle" data-category="3)6 Eikosany">3)6</button>
+            <button class="factor-toggle" data-category="4)6 Pentadekany">4)6</button>
+            <button class="factor-toggle" data-category="5)6 Hexany">5)6</button>
+            <button class="factor-toggle" data-category="6)6 Monany">6)6</button>
+        </div>
+        <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2);"></div>
+        <div id="pigtailFilter">
+            <button class="factor-toggle" data-category="Pigtail">Pigtails</button>
+        </div>
+    </div>
+
+    <div class="ui-title">Split Keys Toggles</div>
+    
+    <div class="switch-group">
+      <span>Degree 3</span>
+      <div class="toggle-container">
+        <button class="toggle-btn active" id="btn-g1-a">3²∙5∙9∙11</button>
+        <button class="toggle-btn" id="btn-g1-b">7∙11/9</button>
+      </div>
+    </div>
+    
+    <div class="switch-group">
+      <span>Degree 7</span>
+      <div class="toggle-container">
+        <button class="toggle-btn active" id="btn-g2-a">7/3</button>
+        <button class="toggle-btn" id="btn-g2-b">9x3∙5∙9</button>
+      </div>
+    </div>
+
+    <div class="switch-group">
+      <span>Degree 13</span>
+      <div class="toggle-container">
+        <button class="toggle-btn active" id="btn-g3-a">3∙5∙7∙9/11</button>
+        <button class="toggle-btn" id="btn-g3-b">/3</button>
+      </div>
+    </div>
+
+    <div class="switch-group">
+      <span>Degree 28</span>
+      <div class="toggle-container">
+        <button class="toggle-btn active" id="btn-g4-a">11²</button>
+        <button class="toggle-btn" id="btn-g4-b">3²∙5∙7∙9∙11</button>
+      </div>
+    </div>
+
+    <div id="osc-container" style="margin-top: 15px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+      <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 1rem; display: flex; justify-content: space-between; align-items: center;">
+        OSC Connection
+        <div style="display: flex; gap: 5px;">
+           <span id="osc-led-send" style="width: 10px; height: 10px; border-radius: 50%; background: #ff9b9b; display: inline-block;"></span>
+           <span id="osc-led-link" style="width: 10px; height: 10px; border-radius: 50%; background: #ff9b9b; display: inline-block;"></span>
+        </div>
+      </h3>
+      <div class="input-group">
+        <label for="osc-ip">Target IP</label>
+        <input type="text" id="osc-ip" value="127.0.0.1" style="width: 100px;">
+      </div>
+      <div class="input-group">
+        <label for="osc-port">Target UDP Port</label>
+        <input type="number" id="osc-port" value="57120" style="width: 100px;">
+      </div>
+      <div class="input-group">
+        <label for="osc-base">Base Root Float (∅)</label>
+        <input type="number" id="osc-base" value="168.0" step="0.1" style="width: 100px;">
+      </div>
+      <div class="input-group" style="margin-top: 10px;">
+        <label for="osc-octave">Octave Shift (Host)</label>
+        <select id="osc-octave" style="width: 100px; padding: 2px;">
+            <option value="3.0">3.0</option>
+            <option value="2.0">2.0</option>
+            <option value="1.0">1.0</option>
+            <option value="0.0" selected>0.0</option>
+            <option value="-1.0">-1.0</option>
+            <option value="-2.0">-2.0</option>
+            <option value="-3.0">-3.0</option>
+          </select>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+        <label style="color: #ddd; font-size: 0.9rem; flex: 1;"><input type="checkbox" id="osc-toggle"> Enable OSC</label>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button id="btn-panic-notes" style="flex: 1; background: #d9534f; border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px; font-size: 0.8rem;">All Notes Off</button>
+        <button id="btn-panic-sound" style="flex: 1; background: #c9302c; border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px; font-size: 0.8rem;">All Sound Off</button>
+      </div>
+      <div id="osc-monitor" style="margin-top: 10px; padding: 8px; background: #000; color: #0f0; font-family: monospace; font-size: 0.75rem; border-radius: 4px; height: 40px; overflow-y: auto;">
+        Esperando WebSocket...
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initDalessandroModule, splitStates, activeCategories, renderDalessandroKeyboard, activeHighlightSet, DALESSANDRO_DEGREES } from './dalessandro.js';
+    import { EIKOSANY_DATA } from './eikosany-data.js';
+    import { PENTADEKANY_2_6, PENTADEKANY_4_6 } from './pentadekany-data.js';
+    import { HEXANY_1_6, HEXANY_5_6 } from './hexany-data.js';
+    import { MONANY_0_6, MONANY_6_6 } from './monany-data.js';
+    import { OTHER_COLLECTIONS } from './other-collections.js';
+    
+    // Inicializar el teclado
+    initDalessandroModule('hex-container');
+
+    // Funciones globales necesarias para el OSC en hexgrid.js
+    window.getActiveEdo = function() { return 42; }; 
+
+    // --- CPS Subsets Logic ---
+    const structureSelect = document.getElementById("cps-structure-select");
+    const typeSelect = document.getElementById("cps-type-select");
+    const setSelect = document.getElementById("cps-set-select");
+    const highlightInput = document.getElementById("highlight-input");
+    const btnHighlight = document.getElementById("btn-highlight");
+
+    structureSelect.addEventListener('change', () => {
+        const structure = structureSelect.value;
+        
+        typeSelect.innerHTML = '<option value="">-- Type --</option>';
+        setSelect.innerHTML = '<option value="">-- Select Set --</option>';
+        setSelect.disabled = true;
+
+        if (structure === 'Eikosany') {
+            typeSelect.innerHTML += `
+                <option value="Dyanies">Dyanies (90)</option>
+                <option value="Trianies">Trianies (120)</option>
+                <option value="Tetranies">Tetranies (30)</option>
+                <option value="Hexanies">Hexanies (30)</option>
+                <option value="Dekanies">Dekanies (12)</option>
+            `;
+        } else if (structure === '2_6_Pentadekany') {
+            typeSelect.innerHTML += `
+                <option value="Dyanies">Dyanies (60)</option>
+                <option value="Trianies">Trianies (20)</option>
+                <option value="Pentanies">Pentanies (6)</option>
+                <option value="Hexanies">Hexanies (15)</option>
+                <option value="Dekanies">Dekanies (6)</option>
+            `;
+        } else if (structure === '4_6_Pentadekany') {
+            typeSelect.innerHTML += `
+                <option value="Dyanies">Dyanies (60)</option>
+                <option value="Trianies">Trianies (20)</option>
+                <option value="Pentanies">Pentanies (6)</option>
+                <option value="Hexanies">Hexanies (15)</option>
+                <option value="Dekanies">Dekanies (6)</option>
+            `;
+        } else if (structure === '1_6_Hexany' || structure === '5_6_Hexany') {
+            typeSelect.innerHTML += `
+                <option value="Dyanies">Dyanies (15)</option>
+                <option value="Trianies">Trianies (20)</option>
+                <option value="Tetranies">Tetranies (15)</option>
+                <option value="Pentanies">Pentanies (6)</option>
+            `;
+        } else if (structure === '0_6_Monany' || structure === '6_6_Monany') {
+            typeSelect.innerHTML += `
+                <option value="Monanies">Monanies (1)</option>
+            `;
+        } else if (OTHER_COLLECTIONS[structure]) {
+            const count = OTHER_COLLECTIONS[structure].length;
+            const optionLabel = (structureSelect.options[structureSelect.selectedIndex].text).split('> ').pop() || structure;
+            typeSelect.innerHTML += `
+                <option value="${structure}">${optionLabel} (${count})</option>
+            `;
+        }
+    });
+
+    typeSelect.addEventListener("change", (e) => {
+      const structure = structureSelect.value;
+      const type = e.target.value;
+      setSelect.innerHTML = '<option value="">-- Select Set --</option>';
+      
+      let sets = null;
+      if (structure === 'Eikosany' && EIKOSANY_DATA[type]) {
+          sets = EIKOSANY_DATA[type];
+      } else if (structure === '2_6_Pentadekany' && PENTADEKANY_2_6[type]) {
+          sets = PENTADEKANY_2_6[type];
+      } else if (structure === '4_6_Pentadekany' && PENTADEKANY_4_6[type]) {
+          sets = PENTADEKANY_4_6[type];
+          if (structure === '4_6_Pentadekany' && type === 'Pentanies') {
+              console.log("DEBUG 4_6_Pentadekany > Pentanies:");
+              console.log("sets:", sets);
+              console.log("Length:", sets ? sets.length : 'null/undefined');
+          }
+      } else if (structure === '1_6_Hexany' && HEXANY_1_6[type]) {
+          sets = HEXANY_1_6[type];
+      } else if (structure === '5_6_Hexany' && HEXANY_5_6[type]) {
+          sets = HEXANY_5_6[type];
+      } else if (structure === '0_6_Monany' && MONANY_0_6[type]) {
+          sets = MONANY_0_6[type];
+      } else if (structure === '6_6_Monany' && MONANY_6_6[type]) {
+          sets = MONANY_6_6[type];
+      } else if (OTHER_COLLECTIONS[structure]) {
+          sets = OTHER_COLLECTIONS[structure];
+      }
+
+      if (!type || !sets) {
+        setSelect.disabled = true;
+        return;
+      }
+      
+      setSelect.disabled = false;
+      
+      const groups = {};
+      sets.forEach(s => {
+        if (!groups[s.group]) groups[s.group] = [];
+        groups[s.group].push(s);
+      });
+      
+      for (const groupName in groups) {
+        const optgroup = document.createElement("optgroup");
+        optgroup.label = groupName;
+        groups[groupName].forEach(s => {
+          const opt = document.createElement("option");
+          
+          let realDegrees = s.degrees;
+          if (structure === 'Eikosany') {
+            // Map Wilson Degrees to Real Degrees for Eikosany structures
+            realDegrees = s.degrees.map(wd => {
+               const node = DALESSANDRO_DEGREES.find(n => n.wilsonDegree === wd && n.cpsCategory.includes("Eikosany"));
+               return node ? node.degree : wd;
+            });
+          }
+          
+          opt.value = realDegrees.join(",");
+          opt.textContent = s.name;
+          optgroup.appendChild(opt);
+        });
+        setSelect.appendChild(optgroup);
+      }
+    });
+
+    setSelect.addEventListener("change", (e) => {
+      const degreesStr = e.target.value;
+      if (!degreesStr) return;
+      
+      // Append to input to allow multiple sets
+      let currentVal = highlightInput.value.trim();
+      if (currentVal && !currentVal.endsWith(',')) {
+        currentVal += ", ";
+      }
+      highlightInput.value = currentVal + degreesStr;
+      
+      // Trigger highlight
+      btnHighlight.click();
+      
+      // Reset select so user can click same item again if needed
+      setSelect.value = "";
+    });
+
+    // --- CPS Classification Toggles ---
+    const toggles = document.querySelectorAll('.factor-toggle');
+    toggles.forEach(toggle => {
+      toggle.addEventListener('click', (e) => {
+        const btn = e.target;
+        const category = btn.dataset.category || "";
+        
+        if (activeCategories.has(category)) {
+          activeCategories.delete(category);
+          btn.classList.remove('active');
+        } else {
+          activeCategories.add(category);
+          btn.classList.add('active');
+        }
+        
+        renderDalessandroKeyboard();
+      });
+    });
+
+    // --- UI Logic for toggles ---
+    function setupToggle(groupId, btnA, btnB) {
+      document.getElementById(btnA).addEventListener('click', (e) => {
+        splitStates[groupId] = "A";
+        e.target.classList.add('active');
+        document.getElementById(btnB).classList.remove('active');
+        renderDalessandroKeyboard();
+      });
+      
+      document.getElementById(btnB).addEventListener('click', (e) => {
+        splitStates[groupId] = "B";
+        e.target.classList.add('active');
+        document.getElementById(btnA).classList.remove('active');
+        renderDalessandroKeyboard();
+      });
+    }
+
+    setupToggle(1, 'btn-g1-a', 'btn-g1-b');
+    setupToggle(2, 'btn-g2-a', 'btn-g2-b');
+
+    setupToggle(3, 'btn-g3-a', 'btn-g3-b');
+    setupToggle(4, 'btn-g4-a', 'btn-g4-b');
+
+    // --- Highlight Sets Logic ---
+    btnHighlight.addEventListener("click", () => {
+      const inputVal = highlightInput.value;
+      if (!inputVal.trim()) {
+         activeHighlightSet.length = 0;
+         renderDalessandroKeyboard();
+         return;
+      }
+      
+      const set = inputVal.split(',')
+                          .map(s => parseInt(s.trim(), 10))
+                          .filter(n => !isNaN(n) && n >= 0 && n <= 41);
+                          
+      activeHighlightSet.length = 0; // clear array
+      activeHighlightSet.push(...new Set(set)); // add unique new items
+      renderDalessandroKeyboard();
+    });
+
+    document.getElementById("btn-clear-highlight").addEventListener("click", () => {
+      highlightInput.value = "";
+      activeHighlightSet.length = 0;
+      renderDalessandroKeyboard();
+    });
+
+
+    // --- Octave Toggles Logic ---
+    document.getElementById("toggle-octave-down").addEventListener("change", (e) => {
+      splitStates.octaveDown = e.target.checked;
+      renderDalessandroKeyboard();
+    });
+    document.getElementById("toggle-octave-up").addEventListener("change", (e) => {
+      splitStates.octaveUp = e.target.checked;
+      renderDalessandroKeyboard();
+    });
+    document.getElementById("toggle-octave-up-2").addEventListener("change", (e) => {
+      splitStates.octaveUp2 = e.target.checked;
+      renderDalessandroKeyboard();
+    });
+    // Toggle UI Panel Logic
+    document.getElementById("toggle-ui-btn").addEventListener("click", () => {
+      const panel = document.getElementById("ui-panel");
+      if (panel.style.display === "none") {
+        panel.style.display = "flex";
+      } else {
+        panel.style.display = "none";
+      }
+    });
+
+    window.getOscBaseFloat = function() {
+      return parseFloat(document.getElementById("osc-base").value) || 168.0;
+    };
+
+    // --- OSC WEBSOCKET & LOGIC ---
+    class OSCMessage {
+      constructor(address, types, args) {
+        this.address = address;
+        this.types = "," + types;
+        this.args = args;
+      }
+
+      encode() {
+        const addrBuf = this.stringToBuffer(this.address);
+        const typesBuf = this.stringToBuffer(this.types);
+        const argsBuf = this.argsToBuffer();
+
+        const totalSize = addrBuf.length + typesBuf.length + argsBuf.length;
+        const buffer = new Uint8Array(totalSize);
+        buffer.set(addrBuf, 0);
+        buffer.set(typesBuf, addrBuf.length);
+        buffer.set(argsBuf, addrBuf.length + typesBuf.length);
+        return buffer.buffer;
+      }
+
+      stringToBuffer(str) {
+        const content = new TextEncoder().encode(str);
+        const len = content.length + 1; // null terminator
+        const paddedLen = Math.ceil(len / 4) * 4;
+        const buffer = new Uint8Array(paddedLen);
+        buffer.set(content);
+        return buffer;
+      }
+
+      argsToBuffer() {
+        let size = 0;
+        const tChars = this.types.substring(1).split("");
+        tChars.forEach(t => { if (t==="i" || t==="f") size += 4; });
+        
+        const buffer = new ArrayBuffer(size);
+        const view = new DataView(buffer);
+        let offset = 0;
+        tChars.forEach((t, idx) => {
+          if (t === "i") { view.setInt32(offset, this.args[idx], false); offset += 4; }
+          else if (t === "f") { view.setFloat32(offset, this.args[idx], false); offset += 4; }
+        });
+        return new Uint8Array(buffer);
+      }
+    }
+
+    const oscStatus = {
+      enabled: false,
+      linked: false,
+      ip: "127.0.0.1",
+      port: 57120,
+      socket: null
+    };
+
+    const oscMonitor = document.getElementById("osc-monitor");
+    const oscLog = [];
+    
+    function updateOscMonitor(msg) {
+      oscLog.push(msg);
+      if (oscLog.length > 3) oscLog.shift();
+      if (oscMonitor) oscMonitor.innerHTML = oscLog.join("<br>");
+    }
+
+    function updateStatusVisuals() {
+      const ledSend = document.getElementById("osc-led-send");
+      if (ledSend) ledSend.style.background = oscStatus.enabled ? "#2b8a3e" : "#ff9b9b";
+      const ledLink = document.getElementById("osc-led-link");
+      if (ledLink) ledLink.style.background = oscStatus.linked ? "#2b8a3e" : "#ff9b9b";
+    }
+
+    function initWebSocket() {
+      if (oscStatus.socket) oscStatus.socket.close();
+      const wsUrl = `ws://${window.location.hostname || "localhost"}:8081`;
+      oscStatus.socket = new WebSocket(wsUrl);
+      oscStatus.socket.binaryType = "arraybuffer";
+
+      oscStatus.socket.onopen = () => {
+        oscStatus.linked = true;
+        updateStatusVisuals();
+        updateOscMonitor("Vínculo Bridge Establecido (WS)");
+      };
+
+      oscStatus.socket.onclose = () => {
+        oscStatus.linked = false;
+        updateStatusVisuals();
+        updateOscMonitor("Vínculo Bridge Perdido. Reintentando...");
+        setTimeout(initWebSocket, 5000);
+      };
+    }
+    initWebSocket();
+
+    window.dispatchOSC = function(address, types, args) {
+      const forcedTypes = types.replace(/i/g, "f");
+      const visualArgs = args.map(a => typeof a === "number" ? a.toFixed(2) : a).join(", ");
+      updateOscMonitor(`[${address}, ${visualArgs}]`);
+
+      if (oscStatus.enabled && oscStatus.linked && oscStatus.socket.readyState === WebSocket.OPEN) {
+        const msg = new OSCMessage(address, forcedTypes, args);
+        const packet = msg.encode();
+        
+        oscStatus.socket.send(JSON.stringify({
+          type: "osc",
+          ip: oscStatus.ip,
+          port: oscStatus.port,
+          message: Array.from(new Uint8Array(packet))
+        }));
+      }
+    };
+
+    document.getElementById("osc-ip").addEventListener("input", (e) => oscStatus.ip = e.target.value);
+    document.getElementById("osc-port").addEventListener("input", (e) => oscStatus.port = parseInt(e.target.value) || 0);
+    document.getElementById("osc-toggle").addEventListener("change", (e) => {
+      oscStatus.enabled = e.target.checked;
+      updateStatusVisuals();
+      updateOscMonitor(oscStatus.enabled ? "OSC Habilitado" : "OSC Deshabilitado");
+    });
+
+    document.getElementById("osc-octave").addEventListener("change", (e) => {
+      const val = parseFloat(e.target.value);
+      if (typeof window.dispatchOSC === 'function') {
+        window.dispatchOSC('/param/a/octave', 'f', [val]);
+      }
+    });
+
+    document.getElementById("btn-panic-notes").addEventListener("click", () => {
+      window.dispatchOSC('/allnotesoff', '', []);
+    });
+
+    document.getElementById("btn-panic-sound").addEventListener("click", () => {
+      window.dispatchOSC('/allsoundoff', '', []);
+    });
+  </script>
+
+  <button id="mode-toggle">Modo de ejecución</button>
+  <script>
+    // Performance Mode Toggle
+    const modeToggleBtn = document.getElementById('mode-toggle');
+    if (modeToggleBtn) {
+      modeToggleBtn.addEventListener('click', () => {
+        document.body.classList.toggle('performance-mode');
+        if (document.body.classList.contains('performance-mode')) {
+          modeToggleBtn.textContent = 'Volver al Modo de edición';
+        } else {
+          modeToggleBtn.textContent = 'Modo de ejecución';
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Erv Wilson's Generalized Keyboard: Mapping Linear Scales</title>
+  <style>
+    /* Premium Aesthetic Defaults */
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at 50% 50%, #1a1a24 0%, #0d0d12 100%);
+      color: #E2E2E2;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: none; /* Previene el swipe back/forward en macOS */
+    }
+
+    /* Container for the Grid */
+        #hexgrid-container {
+      width: 100vw;
+      height: 100vh;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      border-radius: 0;
+      padding: 0;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-weight: 300;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-size: 1.5rem;
+      color: rgba(255, 255, 255, 0.8);
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    
+    /* Small footer hint */
+    .hint {
+      margin-top: 15px;
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 1px;
+    }
+
+    /* Scale Tree Panel */
+    #scale-tree-panel {
+      position: absolute;
+      top: 70px;
+      left: 20px; /* Al lado izquierdo como sugirió el diseño */
+      width: 320px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      background: rgba(20, 20, 30, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      overflow-y: auto;
+    }
+
+    #scale-tree-panel::-webkit-scrollbar {
+      width: 6px;
+    }
+    #scale-tree-panel::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+    }
+    #scale-tree-panel::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+    }
+
+    #scale-tree-panel h2 {
+      margin: 0 0 15px 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #a0a0ff;
+    }
+
+    .input-group {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .input-group label {
+      font-size: 0.9rem;
+      color: #ddd;
+    }
+
+    .input-group input {
+      width: 80px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      padding: 5px 10px;
+      color: #fff;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-group input:focus {
+      border-color: #a0a0ff;
+    }
+
+    #calc-btn {
+      margin-top: 10px;
+      background: linear-gradient(135deg, #6e48aa, #9d50bb);
+      border: none;
+      border-radius: 6px;
+      padding: 10px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.2s;
+    }
+
+    #calc-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(157, 80, 187, 0.4);
+    }
+    
+    #calc-btn:active {
+      transform: translateY(1px);
+    }
+
+    #triplets-container {
+      margin-top: 20px;
+      flex-grow: 1;
+      overflow-y: auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 10px;
+    }
+
+    #triplets-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    #triplets-container::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+    }
+    #triplets-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+    }
+
+    #triplets-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    #triplets-list li {
+      padding: 8px 10px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: background 0.2s;
+      cursor: default;
+    }
+
+    #triplets-list li:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .error-msg {
+      color: #ff6b6b;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+
+    /* Temporary Monitor */
+    #id-monitor {
+      position: absolute;
+      top: 70px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(63, 136, 197, 0.5);
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-family: monospace;
+      font-size: 1.2rem;
+      color: #3F88C5;
+      backdrop-filter: blur(4px);
+      pointer-events: none; /* Let clicks pass through */
+      transition: all 0.1s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+    #id-monitor.active {
+      color: #D00000;
+      border-color: #D00000;
+      transform: scale(1.05);
+      box-shadow: 0 4px 16px rgba(208, 0, 0, 0.3);
+    }
+    /* Mode Toggle Button */
+    #mode-toggle {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: linear-gradient(135deg, #4b6cb7, #182848);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 10px 15px;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      transition: all 0.2s;
+    }
+
+    #mode-toggle:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.7);
+    }
+    
+    #mode-toggle:disabled {
+      background: #333;
+      color: #777;
+      border: 1px solid #444;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Performance Mode CSS */
+    body.performance-mode > *:not(#hexgrid-container):not(#mode-toggle) {
+      display: none !important;
+    }
+
+    body.performance-mode     #hexgrid-container {
+      width: 100vw;
+      height: 100vh;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      border-radius: 0;
+      padding: 0;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+    }
+
+    /* Bloqueo de hexágonos en Modo Edición post-propagación */
+    body.edit-locked:not(.performance-mode) #hexgrid-container g {
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <button id="mode-toggle" disabled>Modo de ejecución</button>
+
+  <div style="position: absolute; top: 20px; right: 20px; z-index: 100;">
+    <a href="index.html" style="color: #fff; text-decoration: none; font-family: 'Inter', sans-serif; background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2);">← Volver al Menú</a>
+  </div>
+
+  <h1 style="text-align: center; max-width: 600px; position: absolute; top: 20px; z-index: 10;">Erv Wilson's Generalized Keyboard:<br>Mapping Linear Scales</h1>
+  
+  <div id="scale-tree-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+      <h2 style="margin: 0;">Scale Tree Generator</h2>
+      <button id="toggle-panel-btn" style="background: none; border: none; color: #fff; cursor: pointer; font-size: 1.2rem; line-height: 1; padding: 0 5px; opacity: 0.7;">_</button>
+    </div>
+    <div id="panel-content">
+      <div class="input-group">
+      <label for="edo-input">EDO</label>
+      <input type="number" id="edo-input" value="53" min="1">
+    </div>
+    <div class="input-group">
+      <label for="gen-input">Generador</label>
+      <input type="number" id="gen-input" value="22" min="1">
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button id="calc-btn" style="flex: 2;">Generar Tripletas</button>
+      <button id="load-btn" style="flex: 1; background: rgba(255,255,255,0.1); border-left: 1px solid rgba(255,255,255,0.2);">Cargar Guardado</button>
+    </div>
+    <div id="triplets-container">
+      <ul id="triplets-list">
+        <li style="color: rgba(255,255,255,0.4); text-align: center; font-family: 'Inter', sans-serif;">Ingresa los datos para calcular</li>
+      </ul>
+    </div>
+    
+    <div id="sequences-container" style="margin-top: 15px; font-size: 0.85rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; display: none;">
+      <h3 style="margin: 0 0 5px 0; color: #a0a0ff; font-size: 0.9rem;">Secuencia Positiva</h3>
+      <div id="pos-seq" style="font-family: monospace; color: #aaa; margin-bottom: 10px; word-break: break-all;"></div>
+      <h3 style="margin: 0 0 5px 0; color: #ff9b9b; font-size: 0.9rem;">Secuencia Negativa</h3>
+      <div id="neg-seq" style="font-family: monospace; color: #aaa; word-break: break-all;"></div>
+    </div>
+
+    <div id="flow-container" style="margin-top: 15px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); display: none;">
+      <h3 id="flow-title" style="margin: 0 0 10px 0; color: #fff; font-size: 1rem;">Construir Teclado</h3>
+      <p id="flow-instruction" style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Instrucción</p>
+      <div id="flow-actions" style="display: flex; gap: 10px;">
+        <button id="flow-btn-primary" style="display: none; background: #5555ff;">Acción 1</button>
+        <button id="flow-btn-tessellate-up" style="display: none; background: #2b8a3e;">Propagar Mosaico (Arriba)</button>
+        <button id="flow-btn-tessellate-down" style="display: none; background: #0b7285;">Propagar Mosaico (Abajo)</button>
+        <button id="flow-btn-flip" style="display: none; background: #9d50bb;">Voltear Verticalmente</button>
+        <button id="flow-btn-secondary" style="display: none; background: rgba(255,255,255,0.1);">Cancelar</button>
+        <button id="flow-btn-tertiary" style="display: none; background: rgba(255,100,100,0.2);">Reset</button>
+      </div>
+    </div>
+    
+    <div id="highlight-container" style="margin-top: 15px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+      <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 1rem;">Highlight Sets / Chords</h3>
+      <div class="input-group">
+        <label for="set-input">Set (ej. 0,4,7)</label>
+        <input type="text" id="set-input" placeholder="0, 4, 7" style="width: 120px;">
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button id="btn-highlight" style="flex: 1; background: #2b8a3e; border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px;">Highlight</button>
+        <button id="btn-clear-highlight" style="flex: 1; background: rgba(255,100,100,0.2); border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px;">Clear</button>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <div style="flex: 1; display: flex; align-items: center; justify-content: space-between;">
+           <label style="font-size: 0.8rem; color: #ddd;">Tn:</label>
+           <input type="number" id="tn-input" value="0" min="0" style="width: 50px;">
+        </div>
+        <div style="flex: 1; display: flex; align-items: center; justify-content: space-between;">
+           <label style="font-size: 0.8rem; color: #ddd;">In:</label>
+           <input type="number" id="in-input" value="0" min="0" style="width: 50px;">
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button id="btn-apply-tn" style="flex: 1; background: #5555ff; border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px;">Apply Tn</button>
+        <button id="btn-apply-in" style="flex: 1; background: #9d50bb; border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px;">Apply In</button>
+      </div>
+    </div>
+    
+    <div id="osc-container" style="margin-top: 15px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+      <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 1rem; display: flex; justify-content: space-between; align-items: center;">
+        OSC Connection
+        <div style="display: flex; gap: 5px;">
+           <span id="osc-led-send" style="width: 10px; height: 10px; border-radius: 50%; background: #ff9b9b; display: inline-block;"></span>
+           <span id="osc-led-link" style="width: 10px; height: 10px; border-radius: 50%; background: #ff9b9b; display: inline-block;"></span>
+        </div>
+      </h3>
+      <div class="input-group">
+        <label for="osc-ip">Target IP</label>
+        <input type="text" id="osc-ip" value="127.0.0.1" style="width: 100px;">
+      </div>
+      <div class="input-group">
+        <label for="osc-port">Target UDP Port</label>
+        <input type="number" id="osc-port" value="57120" style="width: 100px;">
+      </div>
+      <div class="input-group">
+        <label for="osc-base">Base Root Float</label>
+        <input type="number" id="osc-base" value="0.0" step="0.1" style="width: 100px;">
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+        <label style="color: #ddd; font-size: 0.9rem; flex: 1;"><input type="checkbox" id="osc-toggle"> Enable OSC</label>
+      </div>
+      <div class="input-group" style="margin-top: 10px;">
+        <label for="osc-octave">Octave Shift (Host)</label>
+        <select id="osc-octave" style="width: 100px; padding: 2px;">
+            <option value="3.0">3.0</option>
+            <option value="2.0">2.0</option>
+            <option value="1.0">1.0</option>
+            <option value="0.0" selected>0.0</option>
+            <option value="-1.0">-1.0</option>
+            <option value="-2.0">-2.0</option>
+            <option value="-3.0">-3.0</option>
+          </select>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button id="btn-panic-notes" style="flex: 1; background: #d9534f; border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px; font-size: 0.8rem;">All Notes Off</button>
+        <button id="btn-panic-sound" style="flex: 1; background: #c9302c; border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px; font-size: 0.8rem;">All Sound Off</button>
+      </div>
+      <div id="osc-monitor" style="margin-top: 10px; padding: 8px; background: #000; color: #0f0; font-family: monospace; font-size: 0.75rem; border-radius: 4px; height: 40px; overflow-y: auto;">
+        Esperando WebSocket...
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <div id="hexgrid-container">
+    <!-- SVG Grid will be rendered here dynamically -->
+  </div>
+  
+  <div class="hint" style="display: none;">Check the browser console when clicking a hexagon</div>
+  <div id="id-monitor" style="display: none;">ID: --</div>
+
+  <!-- Load the ES6 modules -->
+  <script type="module">
+    import HexGrid from './hexgrid.js';
+    import ScaleTree from './scaletree.js';
+    
+    // --- LÓGICA DE CODIFICACIÓN BINARIA OSC 1.0 ---
+    /**
+     * Clase encargada de empacar mensajes en el estándar binario OSC 1.0.
+     * Convierte la dirección, tipos de datos y argumentos en un ArrayBuffer
+     * listo para ser enviado vía WebSocket a un servidor puente (bridge).
+     */
+    class OSCMessage {
+      constructor(address, types, args) {
+        this.address = address;
+        this.types = "," + types;
+        this.args = args;
+      }
+
+      encode() {
+        const addrBuf = this.stringToBuffer(this.address);
+        const typesBuf = this.stringToBuffer(this.types);
+        const argsBuf = this.argsToBuffer();
+
+        const totalSize = addrBuf.length + typesBuf.length + argsBuf.length;
+        const buffer = new Uint8Array(totalSize);
+        buffer.set(addrBuf, 0);
+        buffer.set(typesBuf, addrBuf.length);
+        buffer.set(argsBuf, addrBuf.length + typesBuf.length);
+        return buffer.buffer;
+      }
+
+      stringToBuffer(str) {
+        const content = new TextEncoder().encode(str);
+        const len = content.length + 1; // null terminator
+        const paddedLen = Math.ceil(len / 4) * 4;
+        const buffer = new Uint8Array(paddedLen);
+        buffer.set(content);
+        return buffer;
+      }
+
+      argsToBuffer() {
+        let size = 0;
+        const tChars = this.types.substring(1).split("");
+        tChars.forEach(t => { if (t==="i" || t==="f") size += 4; });
+        
+        const buffer = new ArrayBuffer(size);
+        const view = new DataView(buffer);
+        let offset = 0;
+        tChars.forEach((t, idx) => {
+          if (t === "i") { view.setInt32(offset, this.args[idx], false); offset += 4; }
+          else if (t === "f") { view.setFloat32(offset, this.args[idx], false); offset += 4; }
+        });
+        return new Uint8Array(buffer);
+      }
+    }
+
+    // --- OSC STATE & SOCKET ---
+    const oscStatus = {
+      enabled: false,
+      linked: false,
+      ip: "127.0.0.1",
+      port: 57120,
+      socket: null
+    };
+
+    const oscMonitor = document.getElementById("osc-monitor");
+    const oscLog = [];
+    
+    /**
+     * Actualiza el monitor visual en la UI de los mensajes OSC enviados.
+     * Mantiene un log circular de los últimos 3 mensajes para debug visual.
+     * @param {string} msg - El mensaje OSC formateado en texto.
+     */
+    function updateOscMonitor(msg) {
+      oscLog.push(msg);
+      if (oscLog.length > 3) oscLog.shift();
+      if (oscMonitor) oscMonitor.innerHTML = oscLog.join("<br>");
+    }
+
+    function updateStatusVisuals() {
+      const ledSend = document.getElementById("osc-led-send");
+      if (ledSend) ledSend.style.background = oscStatus.enabled ? "#2b8a3e" : "#ff9b9b";
+      const ledLink = document.getElementById("osc-led-link");
+      if (ledLink) ledLink.style.background = oscStatus.linked ? "#2b8a3e" : "#ff9b9b";
+    }
+
+    function initWebSocket() {
+      if (oscStatus.socket) oscStatus.socket.close();
+      const wsUrl = `ws://${window.location.hostname || "localhost"}:8081`;
+      oscStatus.socket = new WebSocket(wsUrl);
+      oscStatus.socket.binaryType = "arraybuffer";
+
+      oscStatus.socket.onopen = () => {
+        oscStatus.linked = true;
+        updateStatusVisuals();
+        updateOscMonitor("Vínculo Bridge Establecido (WS)");
+      };
+
+      oscStatus.socket.onclose = () => {
+        oscStatus.linked = false;
+        updateStatusVisuals();
+        updateOscMonitor("Vínculo Bridge Perdido. Reintentando...");
+        setTimeout(initWebSocket, 5000);
+      };
+    }
+    initWebSocket();
+
+    // Exportar al window global para que HexGrid.js pueda llamarlo sin dependencias circulares complejas
+    window.dispatchOSC = function(address, types, args) {
+      const forcedTypes = types.replace(/i/g, "f"); // Forzar float como pidió el user
+      const visualArgs = args.map(a => typeof a === "number" ? a.toFixed(1) : a).join(", ");
+      updateOscMonitor(`[${address}, ${visualArgs}]`);
+
+      if (oscStatus.enabled && oscStatus.linked && oscStatus.socket.readyState === WebSocket.OPEN) {
+        const msg = new OSCMessage(address, forcedTypes, args);
+        const packet = msg.encode();
+        
+        oscStatus.socket.send(JSON.stringify({
+          type: "osc",
+          ip: oscStatus.ip,
+          port: oscStatus.port,
+          message: Array.from(new Uint8Array(packet))
+        }));
+      }
+    };
+
+    document.getElementById("osc-ip").addEventListener("input", (e) => oscStatus.ip = e.target.value);
+    document.getElementById("osc-port").addEventListener("input", (e) => oscStatus.port = parseInt(e.target.value) || 0);
+    document.getElementById("osc-toggle").addEventListener("change", (e) => {
+      oscStatus.enabled = e.target.checked;
+      updateStatusVisuals();
+      updateOscMonitor(oscStatus.enabled ? "OSC Habilitado" : "OSC Deshabilitado");
+    });
+
+    document.getElementById("osc-octave").addEventListener("change", (e) => {
+      const val = parseFloat(e.target.value);
+      if (typeof window.dispatchOSC === 'function') {
+        window.dispatchOSC('/param/a/octave', 'f', [val]);
+      }
+    });
+
+    document.getElementById("btn-panic-notes").addEventListener("click", () => {
+      if (typeof window.dispatchOSC === 'function') {
+        window.dispatchOSC('/allnotesoff', '', []);
+      }
+    });
+
+    document.getElementById("btn-panic-sound").addEventListener("click", () => {
+      if (typeof window.dispatchOSC === 'function') {
+        window.dispatchOSC('/allsoundoff', '', []);
+      }
+    });
+
+    window.getOscBaseFloat = function() {
+      return parseFloat(document.getElementById("osc-base").value) || 0.0;
+    };
+    
+    window.getActiveEdo = function() {
+      return selectedEdo ? parseInt(selectedEdo) : 12;
+    };
+    
+    // --- UI DEL MÓDULO SCALE TREE ---
+    const calcBtn = document.getElementById('calc-btn');
+    const edoInput = document.getElementById('edo-input');
+    const genInput = document.getElementById('gen-input');
+    const tripletsList = document.getElementById('triplets-list');
+    const seqContainer = document.getElementById('sequences-container');
+    const posSeqDiv = document.getElementById('pos-seq');
+    const negSeqDiv = document.getElementById('neg-seq');
+
+    // --- MÁQUINA DE ESTADOS (STATE MACHINE) ---
+    let flowState = 'IDLE'; // IDLE, SELECTED, AWAITING_ROOT, ROOT_PLACED, OCTAVE_PLACED, ADJUST_NOTES, CONFIRMED
+    let manualAdjustDir = 1;
+    let selectedTriplet = null;
+    let selectedEdo = null;
+    let selectedGen = null;
+    let rootCoords = null;
+    let isFlipped = false;
+    
+    const flowContainer = document.getElementById('flow-container');
+    const flowTitle = document.getElementById('flow-title');
+    const flowInstruction = document.getElementById('flow-instruction');
+    const flowBtnPrimary = document.getElementById('flow-btn-primary');
+    const flowBtnTessellateUp = document.getElementById('flow-btn-tessellate-up');
+    const flowBtnTessellateDown = document.getElementById('flow-btn-tessellate-down');
+    const flowBtnFlip = document.getElementById('flow-btn-flip');
+    const flowBtnSecondary = document.getElementById('flow-btn-secondary');
+    const flowBtnTertiary = document.getElementById('flow-btn-tertiary');
+
+    /**
+     * Restablece el estado completo del módulo y la interfaz al punto inicial.
+     * Limpia la grilla hexagonal, remueve colores e inicializa la máquina de estados.
+     */
+    function resetToAbsoluteStart() {
+      tripletsList.innerHTML = '';
+      seqContainer.style.display = 'none';
+      edoInput.value = '12';
+      genInput.value = '7';
+      isFlipped = false;
+      flowState = 'IDLE';
+      updateFlowUI();
+    }
+
+    /**
+     * Motor de la Máquina de Estados (State Machine) para la UI de construcción.
+     * Muestra, oculta y configura los botones y textos dependiendo del flujo 
+     * en el que se encuentre el usuario (Selección, Raíz, Octava, Múltiples Octavas, etc).
+     */
+    function updateFlowUI() {
+      if (flowState === 'IDLE') {
+        flowContainer.style.display = 'none';
+        HexGrid.clearAllText();
+        HexGrid.resetAllColors();
+        HexGrid.removeAllHighlights();
+      } else {
+        flowContainer.style.display = 'block';
+      }
+
+      flowBtnPrimary.style.display = 'none';
+      flowBtnTessellateUp.style.display = 'none';
+      flowBtnTessellateDown.style.display = 'none';
+      flowBtnFlip.style.display = 'none';
+      flowBtnSecondary.style.display = 'none';
+      flowBtnTertiary.style.display = 'none';
+      flowBtnPrimary.onclick = null;
+      flowBtnTessellateUp.onclick = null;
+      flowBtnTessellateDown.onclick = null;
+      flowBtnFlip.onclick = null;
+      flowBtnSecondary.onclick = null;
+      flowBtnTertiary.onclick = null;
+
+      const modeBtn = document.getElementById('mode-toggle');
+      if (modeBtn) {
+        modeBtn.disabled = !(flowState === 'MULTIOCTAVE' || flowState === 'TESSELLATED');
+      }
+
+      if (flowState === 'SELECTED') {
+        flowTitle.textContent = `Teclado Seleccionado: ${selectedTriplet.mediant[0]}/${selectedTriplet.mediant[1]}`;
+        flowInstruction.textContent = 'Haz clic en "Construir teclado" para ubicarlo manualmente en la grilla espacial.';
+        flowBtnPrimary.textContent = 'Construir teclado';
+        flowBtnPrimary.style.display = 'block';
+        flowBtnPrimary.onclick = () => {
+          flowState = 'AWAITING_ROOT';
+          HexGrid.clearAllText();
+          updateFlowUI();
+        };
+      } else if (flowState === 'AWAITING_ROOT') {
+        flowInstruction.textContent = 'Set the position of the "root". Haz clic en cualquier hexágono para ubicar el origen (0).';
+        flowBtnSecondary.textContent = 'Cancelar';
+        flowBtnSecondary.style.display = 'block';
+        flowBtnSecondary.onclick = () => {
+          flowState = 'IDLE';
+          updateFlowUI();
+        };
+      } else if (flowState === 'ROOT_PLACED') {
+        flowInstruction.textContent = `Raíz ubicada en la columna ${rootCoords.col}, fila ${rootCoords.row}.`;
+        flowBtnPrimary.textContent = 'Determine the position of the "octave"';
+        flowBtnPrimary.style.display = 'block';
+        
+        flowBtnSecondary.textContent = 'Cambiar Raíz';
+        flowBtnSecondary.style.display = 'block';
+        
+        flowBtnPrimary.onclick = () => {
+         // Vector espacial de la Octava para wrap-around (Modulo Espacial)
+      const octX = selectedTriplet.left[1];
+      const octY = selectedTriplet.right[1];
+      const octaveTarget = HexGrid.wilsonWalk(rootCoords.col, rootCoords.row, octX, octY);
+      const deltaCol = octaveTarget.col - rootCoords.col;
+      const deltaRow = octaveTarget.row - rootCoords.row;
+          
+          if (octaveTarget) {
+            HexGrid.setNoteData(`hex-${octaveTarget.col}-${octaveTarget.row}`, '0', 1);
+            flowState = 'OCTAVE_PLACED';
+            updateFlowUI();
+          } else {
+            alert("La octava cae fuera del tablero visual. Elige una raíz más central.");
+          }
+        };
+        
+        flowBtnSecondary.onclick = () => {
+          flowState = 'AWAITING_ROOT';
+          HexGrid.clearAllText();
+          updateFlowUI();
+        };
+      } else if (flowState === 'OCTAVE_PLACED') {
+        flowInstruction.textContent = 'Octava ubicada exitosamente. Verifica visualmente si la posición te conviene.';
+        flowBtnPrimary.textContent = 'Map the remaining notes of the scale';
+        flowBtnPrimary.style.display = 'block';
+        
+        flowBtnSecondary.textContent = 'Reiniciar';
+        flowBtnSecondary.style.display = 'block';
+        
+        flowBtnPrimary.onclick = async () => {
+          flowBtnPrimary.disabled = true;
+          flowBtnSecondary.disabled = true;
+          flowInstruction.innerHTML = 'Generando el teclado animado...';
+          
+          await generateKeyboard(selectedEdo, selectedGen, selectedTriplet, rootCoords);
+          
+          flowBtnPrimary.disabled = false;
+          flowBtnSecondary.disabled = false;
+          flowState = 'ADJUST_NOTES';
+          updateFlowUI();
+        };
+        
+        flowBtnSecondary.onclick = () => {
+          flowState = 'AWAITING_ROOT';
+          HexGrid.clearAllText();
+          updateFlowUI();
+        };
+      } else if (flowState === 'ADJUST_NOTES') {
+        HexGrid.removeAllHighlights();
+
+        const dirToggleHtml = `<br><br><label style="color:#aaa; cursor:pointer; font-size:0.8rem; display:flex; align-items:center; gap:5px;"><input type="checkbox" id="toggle-dir"> Ajuste manual hacia Abajo (-1 Octava)</label>`;
+
+        flowInstruction.innerHTML = `Haz clic en las notas para reubicarlas y compactar el teclado visualmente. ${dirToggleHtml}`;
+        
+        document.getElementById('toggle-dir').checked = (manualAdjustDir === -1);
+        document.getElementById('toggle-dir').onchange = (e) => {
+          manualAdjustDir = e.target.checked ? -1 : 1;
+        };
+        
+        flowBtnPrimary.style.display = 'none'; // Auto adjust removed
+        
+        flowBtnSecondary.textContent = 'Confirmar y Guardar Teclado';
+        flowBtnSecondary.style.display = 'block';
+        flowBtnSecondary.onclick = () => {
+          saveConfiguration();
+          flowState = 'CONFIRMED';
+          updateFlowUI();
+        };
+      } else if (flowState === 'CONFIRMED') {
+        HexGrid.removeAllHighlights();
+        flowInstruction.textContent = 'Configuración topológica guardada exitosamente en el navegador.';
+        
+        flowBtnPrimary.textContent = 'Propagar a todas las octavas';
+        flowBtnPrimary.style.display = 'block';
+        flowBtnPrimary.onclick = async () => {
+          flowBtnPrimary.disabled = true;
+          flowBtnFlip.disabled = true;
+          flowBtnSecondary.disabled = true;
+          flowInstruction.innerHTML = 'Propagando octavas...';
+          
+          await propagateOctaves();
+          
+          flowBtnPrimary.disabled = false;
+          flowBtnFlip.disabled = false;
+          flowBtnSecondary.disabled = false;
+          flowState = 'MULTIOCTAVE';
+          updateFlowUI();
+        };
+
+        flowBtnFlip.textContent = 'Voltear Verticalmente';
+        flowBtnFlip.style.display = 'block';
+        flowBtnFlip.onclick = () => {
+          isFlipped = !isFlipped;
+          const mapped = HexGrid.getMappedNotes();
+          const newMappings = [];
+          
+          mapped.forEach(note => {
+            let offset = 0;
+            const cNote = Math.abs(note.col % 2);
+            const cRoot = Math.abs(rootCoords.col % 2);
+            if (cNote !== cRoot) {
+              offset = (cNote === 1) ? 1 : -1;
+            }
+            const newRow = 2 * rootCoords.row - note.row - offset;
+            newMappings.push({ 
+              col: note.col, 
+              row: newRow, 
+              text: note.textNode.textContent,
+              degree: note.noteDegree,
+              octave: note.noteOctave !== undefined ? note.noteOctave : 0
+            });
+          });
+          
+          HexGrid.clearAllText();
+          newMappings.forEach(mapping => {
+            const targetHex = HexGrid.getHex(mapping.col, mapping.row);
+            if (targetHex) {
+              HexGrid.setNoteData(targetHex.id, mapping.text, mapping.octave);
+            }
+          });
+        };
+
+        flowBtnSecondary.textContent = 'Volver a Selección de Teclado';
+        flowBtnSecondary.style.display = 'block';
+        flowBtnSecondary.onclick = () => {
+          HexGrid.clearAllText();
+          HexGrid.resetAllColors();
+          isFlipped = false;
+          flowState = 'SELECTED';
+          updateFlowUI();
+        };
+
+        flowBtnTertiary.textContent = 'Restablecimiento Total';
+        flowBtnTertiary.style.display = 'block';
+        flowBtnTertiary.onclick = () => {
+          resetToAbsoluteStart();
+        };
+      } else if (flowState === 'MULTIOCTAVE') {
+        flowInstruction.innerHTML = 'Teclado propagado a todas las octavas posibles. Colores:<br> <span style="color:#aaa;">Gris/Azul</span> (Octava Base) | <span style="color:#d46a6a;">Cálidos</span> (+ Octavas) | <span style="color:#6a6ad4;">Fríos</span> (- Octavas)';
+        
+        flowBtnTessellateUp.textContent = 'Propagar Mosaico Infinito (Arriba)';
+        flowBtnTessellateUp.style.display = 'block';
+        flowBtnTessellateUp.onclick = () => {
+          let octX = selectedTriplet.left[1];
+          let octY = selectedTriplet.right[1];
+          if (isFlipped) { const t = octX; octX = octY; octY = t; }
+          const vector = calculateTessellationVector(parseInt(edoInput.value), octX, octY);
+          if (vector) {
+            propagateTessellation(vector.dx, vector.dy);
+          } else {
+            alert('No se pudo determinar matemáticamente el vector de teselación para este generador.');
+          }
+        };
+
+        flowBtnTessellateDown.textContent = 'Propagar Mosaico Infinito (Abajo)';
+        flowBtnTessellateDown.style.display = 'block';
+        flowBtnTessellateDown.onclick = () => {
+          let octX = selectedTriplet.left[1];
+          let octY = selectedTriplet.right[1];
+          if (isFlipped) { const t = octX; octX = octY; octY = t; }
+          const vector = calculateTessellationVector(parseInt(edoInput.value), octX, octY);
+          if (vector) {
+            propagateTessellation(-vector.dx, -vector.dy);
+          } else {
+            alert('No se pudo determinar matemáticamente el vector de teselación para este generador.');
+          }
+        };
+
+        flowBtnSecondary.textContent = 'Cancelar / Reiniciar Selección';
+        flowBtnSecondary.style.display = 'block';
+        flowBtnSecondary.onclick = () => {
+          HexGrid.clearAllText();
+          HexGrid.resetAllColors();
+          isFlipped = false;
+          flowState = 'SELECTED';
+          updateFlowUI();
+        };
+
+        flowBtnTertiary.textContent = 'Restablecimiento Total';
+        flowBtnTertiary.style.display = 'block';
+        flowBtnTertiary.onclick = () => {
+          resetToAbsoluteStart();
+        };
+      } else if (flowState === 'TESSELLATED') {
+        flowInstruction.innerHTML = 'Teclado propagado en mosaico infinito.';
+        
+        flowBtnSecondary.textContent = 'Volver a Selección de Teclado';
+        flowBtnSecondary.style.display = 'block';
+        flowBtnSecondary.onclick = () => {
+          HexGrid.clearAllText();
+          HexGrid.resetAllColors();
+          isFlipped = false;
+          flowState = 'SELECTED';
+          updateFlowUI();
+        };
+
+        flowBtnTertiary.textContent = 'Restablecimiento Total';
+        flowBtnTertiary.style.display = 'block';
+        flowBtnTertiary.onclick = () => {
+          resetToAbsoluteStart();
+        };
+      }
+      
+      if (flowState === 'MULTIOCTAVE' || flowState === 'TESSELLATED') {
+        document.body.classList.add('edit-locked');
+      } else {
+        document.body.classList.remove('edit-locked');
+      }
+    }
+
+    // --- LÓGICA DE SECUENCIAS LINEALES (NARUSHIMA) ---
+    /**
+     * Calcula y muestra las secuencias ascendente y descendente del Círculo de Quintas.
+     * Aplica la regla de paridad de Terumi Narushima para distribuir matemáticamente 
+     * los grados alrededor del centro armónico.
+     * @param {number} edoSeleccionado - Divisiones iguales de la octava.
+     * @param {number} generadorSeleccionado - El tamaño en pasos del generador.
+     */
+    function displaySequences(edoSeleccionado, generadorSeleccionado) {
+      // Regla de paridad de Narushima
+      const isEven = edoSeleccionado % 2 === 0;
+      const limitePositivo = Math.floor(edoSeleccionado / 2);
+      const limiteNegativo = isEven ? (edoSeleccionado / 2) - 1 : Math.floor(edoSeleccionado / 2);
+      
+      const halfEdo = edoSeleccionado / 2;
+      const largeGen = generadorSeleccionado < halfEdo ? edoSeleccionado - generadorSeleccionado : generadorSeleccionado;
+      const smallGen = edoSeleccionado - largeGen; // Complemento para ir en reversa
+
+      // Secuencia Positiva
+      const posSeq = [0];
+      let valPos = 0;
+      for (let i = 1; i <= limitePositivo; i++) {
+        valPos = (valPos + largeGen) % edoSeleccionado;
+        posSeq.push(valPos);
+      }
+
+      // Secuencia Negativa
+      const negSeq = [0];
+      let valNeg = 0;
+      for (let i = 1; i <= limiteNegativo; i++) {
+        valNeg = (valNeg + smallGen) % edoSeleccionado;
+        negSeq.push(valNeg);
+      }
+
+      // Mostrar en la interfaz
+      posSeqDiv.textContent = posSeq.join(', ');
+      negSeqDiv.textContent = negSeq.join(', ');
+      seqContainer.style.display = 'block';
+      
+      // Limpiar el teclado visual por ahora (ya que dibujaremos hexágonos más adelante)
+      HexGrid.clearAllText();
+    }
+
+    const loadBtn = document.getElementById('load-btn');
+
+    // --- LÓGICA DE PERSISTENCIA Y CARGA ---
+    loadBtn.addEventListener('click', () => {
+      const saved = localStorage.getItem('hexKeyboardConfig');
+      if (saved) {
+        const config = JSON.parse(saved);
+        selectedEdo = config.edo;
+        selectedGen = config.gen;
+        selectedTriplet = config.triplet;
+        rootCoords = config.rootCoords;
+        
+        edoInput.value = config.edo;
+        genInput.value = config.gen;
+        
+        HexGrid.clearAllText();
+        HexGrid.removeAllHighlights();
+        config.notesMap.forEach(n => {
+          HexGrid.setNoteData(`hex-${n.col}-${n.row}`, n.val, n.oct);
+        });
+        
+        flowState = 'CONFIRMED';
+        updateFlowUI();
+      } else {
+        alert('No hay ninguna configuración guardada en el navegador.');
+      }
+    });
+
+    function saveConfiguration() {
+      const mapped = HexGrid.getMappedNotes();
+      const notesMap = mapped.map(h => ({
+        val: h.textNode.textContent,
+        oct: h.noteOctave,
+        col: h.col,
+        row: h.row
+      }));
+      
+      const config = {
+        edo: selectedEdo,
+        gen: selectedGen,
+        triplet: selectedTriplet,
+        rootCoords: rootCoords,
+        notesMap: notesMap
+      };
+      
+      localStorage.setItem('hexKeyboardConfig', JSON.stringify(config));
+    }
+
+    // Heurísticas automáticas eliminadas a petición del usuario.
+
+    calcBtn.addEventListener('click', () => {
+      const edo = parseInt(edoInput.value, 10);
+      const gen = parseInt(genInput.value, 10);
+      
+      tripletsList.innerHTML = ''; // Limpiar lista
+      seqContainer.style.display = 'none'; // Ocultar secuencias
+      flowState = 'IDLE';
+      updateFlowUI();
+      
+      if (isNaN(edo) || isNaN(gen)) {
+        tripletsList.innerHTML = '<li class="error-msg">Ingresa valores numéricos válidos.</li>';
+        return;
+      }
+
+      if (!ScaleTree.isValidSystem(edo, gen)) {
+        tripletsList.innerHTML = `<li class="error-msg">Error: ${edo} y ${gen} no son coprimos (MCD != 1). Sistema no válido.</li>`;
+        return;
+      }
+
+      // 1. Mostrar secuencias lineales para el sistema completo
+      displaySequences(edo, gen);
+
+      // 2. Generar y mostrar la lista de teclados
+      const triplets = ScaleTree.generateDiophantineTriplets(edo, gen);
+      
+      triplets.forEach((t) => {
+        const li = document.createElement('li');
+        li.textContent = `Keyboard ${t.mediant[0]}/${t.mediant[1]}: [${t.left[0]}/${t.left[1]}, ${t.right[0]}/${t.right[1]}]`;
+        li.style.cursor = 'pointer';
+        li.title = 'Haz clic para seleccionar este teclado';
+        li.addEventListener('click', () => {
+          selectedTriplet = t;
+          selectedEdo = edo;
+          selectedGen = gen;
+          flowState = 'SELECTED';
+          updateFlowUI();
+          
+          // Resaltar visualmente la selección en la lista
+          Array.from(tripletsList.children).forEach(child => child.style.background = 'none');
+          li.style.background = 'rgba(255,255,255,0.1)';
+        });
+        tripletsList.appendChild(li);
+      });
+    });
+
+    // 1. Generate the grid configuration and objects
+    
+    HexGrid.generate();
+    
+    // 2. Render the grid into our target container
+    const container = document.getElementById('hexgrid-container');
+    HexGrid.render(container);
+    
+    // 3. Registrar el clic interactivo en hexágonos
+    HexGrid.onHexClick((hexData) => {
+      if (flowState === 'AWAITING_ROOT') {
+        rootCoords = { col: hexData.col, row: hexData.row };
+        HexGrid.clearAllText();
+        HexGrid.setNoteData(hexData.id, '0', 0);
+        flowState = 'ROOT_PLACED';
+        updateFlowUI();
+      } else if (flowState === 'ADJUST_NOTES') {
+        const noteVal = HexGrid.getText(hexData.id);
+        const noteOct = HexGrid.getNoteOctave(hexData.id);
+        if (noteVal !== '') {
+          const octX = selectedTriplet.left[1];
+          const octY = selectedTriplet.right[1];
+          const stepsX = octX * manualAdjustDir;
+          const stepsY = octY * manualAdjustDir;
+          
+          const targetCoords = HexGrid.wilsonWalk(hexData.col, hexData.row, stepsX, stepsY);
+          const targetHex = HexGrid.getHex(targetCoords.col, targetCoords.row);
+
+          if (targetHex && HexGrid.getText(targetHex.id) === '') {
+            HexGrid.clearText(hexData.id);
+            // La nota reubicada sigue perteneciendo a su octava estructural original (0)
+            HexGrid.setNoteData(targetHex.id, noteVal, noteOct);
+            
+            // Highlight temporalmente el destino para que el usuario sepa dónde quedó
+            HexGrid.polygonStroke(targetHex.id, '#00ff00', '3');
+            setTimeout(() => {
+              HexGrid.polygonStroke(targetHex.id, HexGrid.config.strokeColor, HexGrid.config.strokeWidth.toString());
+            }, 500);
+            
+          } else if (targetHex) {
+            alert(`El espacio de destino (Col ${targetHex.col}, Fila ${targetHex.row}) ya está ocupado por la nota ${HexGrid.getText(targetHex.id)}.`);
+          } else {
+            alert('El movimiento cae fuera de la grilla visual SVG. Intenta desplazar la Raíz inicial más al centro si faltan notas.');
+          }
+        }
+      }
+    });
+
+    // Helper en HexGrid para setear el estado de highlight unificado
+    HexGrid.setHighlightState = function(id, isHighlighted) {
+      const hex = this.hexagons.find(h => h.id === id);
+      if (hex && hex.polygon) {
+        hex.isHighlighted = isHighlighted;
+        if (isHighlighted) {
+          hex.polygon.setAttribute('fill', 'rgba(255, 234, 0, 0.4)');
+          hex.polygon.setAttribute('stroke', '#ffea00');
+          hex.polygon.setAttribute('stroke-width', '3');
+        } else {
+          hex.polygon.setAttribute('fill', hex.bgColor || this.config.defaultColor);
+          hex.polygon.setAttribute('stroke', this.config.strokeColor);
+          hex.polygon.setAttribute('stroke-width', this.config.strokeWidth);
+        }
+      }
+    };
+
+    // --- LÓGICA DE ILUMINACIÓN DE SETS, TN E IN ---
+    let baseSet = []; // Almacena el set original ingresado
+    let activeSet = []; // Almacena el set procesado
+    
+    /**
+     * Convierte el string de entrada del usuario en un array de grados numéricos.
+     * @param {string} inputStr - Ejemplo: "0, 4, 7".
+     * @returns {number[]} Array de grados limpios.
+     */
+    function parseSetInput(inputStr) {
+      if (!inputStr) return [];
+      return inputStr.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+    }
+    
+    function renderHighlightedSet(currentSet) {
+      // 1. Limpiar todos los highlights previos
+      const mapped = HexGrid.getMappedNotes();
+      mapped.forEach(hex => {
+        HexGrid.setHighlightState(hex.id, false);
+      });
+      
+      // 2. Aplicar el highlight si el set no está vacío
+      if (!currentSet || currentSet.length === 0) return;
+      
+      const edo = selectedEdo ? parseInt(selectedEdo) : 12; // EDO fallback
+      const normalizedSet = currentSet.map(n => ((n % edo) + edo) % edo); // Modulo real positivo
+      
+      mapped.forEach(hex => {
+        if (hex.noteDegree !== undefined) {
+          const deg = parseInt(hex.noteDegree);
+          if (normalizedSet.includes(deg)) {
+            HexGrid.setHighlightState(hex.id, true);
+          }
+        }
+      });
+    }
+
+    document.getElementById('btn-highlight').addEventListener('click', () => {
+      if (!selectedEdo) {
+        alert("Primero debes calcular o cargar un teclado EDO.");
+        return;
+      }
+      const rawInput = document.getElementById('set-input').value;
+      baseSet = parseSetInput(rawInput);
+      activeSet = [...baseSet];
+      renderHighlightedSet(activeSet);
+    });
+
+    document.getElementById('btn-clear-highlight').addEventListener('click', () => {
+      document.getElementById('set-input').value = '';
+      baseSet = [];
+      activeSet = [];
+      renderHighlightedSet(activeSet);
+    });
+
+    function clampInputToEdo(inputEl) {
+      if (!selectedEdo) return;
+      const maxEdo = parseInt(selectedEdo);
+      let val = parseInt(inputEl.value);
+      if (isNaN(val) || val < 0) inputEl.value = 0;
+      else if (val >= maxEdo) inputEl.value = maxEdo - 1;
+    }
+
+    const tnInput = document.getElementById('tn-input');
+    const inInput = document.getElementById('in-input');
+    tnInput.addEventListener('input', () => clampInputToEdo(tnInput));
+    inInput.addEventListener('input', () => clampInputToEdo(inInput));
+    tnInput.addEventListener('change', () => clampInputToEdo(tnInput));
+    inInput.addEventListener('change', () => clampInputToEdo(inInput));
+
+    document.getElementById('btn-apply-tn').addEventListener('click', () => {
+      if (!selectedEdo || baseSet.length === 0) return;
+      const tVal = parseInt(document.getElementById('tn-input').value) || 0;
+      activeSet = baseSet.map(n => n + tVal);
+      // El modulo se aplica dentro de renderHighlightedSet
+      renderHighlightedSet(activeSet);
+    });
+
+    document.getElementById('btn-apply-in').addEventListener('click', () => {
+      if (!selectedEdo || baseSet.length === 0) return;
+      const iVal = parseInt(document.getElementById('in-input').value) || 0;
+      // Inversión In a partir del baseSet: n -> (I - n) % EDO
+      activeSet = baseSet.map(n => iVal - n);
+      renderHighlightedSet(activeSet);
+    });
+
+    // --- LÓGICA DINÁMICA DE DIBUJADO DE TECLADOS (NARUSHIMA / WILSON) ---
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    /**
+     * Generador principal del teclado lineal. Emplea la caminata geométrica de Wilson (wilsonWalk)
+     * siguiendo los vectores estructurales calculados por el ScaleTree.
+     * Mapea todas las notas de la octava central partiendo desde el origen.
+     * @param {number} edo - Divisiones de la octava.
+     * @param {number} generador - El tamaño en pasos de EDO.
+     * @param {Object} triplet - Tripleta diofántica con vectores .left, .right, .mediant.
+     * @param {Object} origin - Coordenadas de inicio {col, row}.
+     */
+    async function generateKeyboard(edo, generador, triplet, origin) {
+      // Regla de paridad de Narushima
+      const isEven = edo % 2 === 0;
+      const limitePositivo = Math.floor(edo / 2);
+      const limiteNegativo = isEven ? (edo / 2) - 1 : Math.floor(edo / 2);
+      
+      // Vectores de salto
+      const genX = triplet.left[0];
+      const genY = triplet.right[0];
+      const octX = triplet.left[1];
+      const octY = triplet.right[1];
+      
+      // Vector espacial de la Octava para wrap-around (Modulo Espacial)
+      const octaveTarget = HexGrid.wilsonWalk(origin.col, origin.row, octX, octY);
+      const deltaCol = octaveTarget.col - origin.col;
+      const deltaRow = octaveTarget.row - origin.row;
+
+      // El complemento grande es para el ciclo ascendente, el pequeño para el descendente
+      const halfEdo = edo / 2;
+      const largeGen = generador < halfEdo ? edo - generador : generador;
+      const smallGen = edo - largeGen;
+
+      // 1. Secuencia Generadora Positiva
+      let currentCol = origin.col;
+      let currentRow = origin.row;
+      let currentValue = 0;
+
+      for (let i = 1; i <= limitePositivo; i++) {
+        currentValue = (currentValue + largeGen) % edo;
+        // Caminar matemáticamente usando coordenadas numéricas
+        let rawCoords = HexGrid.wilsonWalk(currentCol, currentRow, genX, genY);
+        
+        let finalCol = rawCoords.col;
+        let finalRow = rawCoords.row;
+
+        // Wrap-around espacial: Si cruzamos la octava, caminamos un vector de octava en reversa
+        let loopLimit = 0;
+        while (finalCol >= origin.col + deltaCol && deltaCol > 0) {
+          let wrap = HexGrid.wilsonWalk(finalCol, finalRow, -octX, -octY);
+          finalCol = wrap.col;
+          finalRow = wrap.row;
+          if (++loopLimit > 20) break;
+        }
+        loopLimit = 0;
+        while (finalCol < origin.col && deltaCol > 0) {
+          let wrap = HexGrid.wilsonWalk(finalCol, finalRow, octX, octY);
+          finalCol = wrap.col;
+          finalRow = wrap.row;
+          if (++loopLimit > 20) break;
+        }
+
+        let nextHex = HexGrid.getHex(finalCol, finalRow);
+        if (!nextHex) {
+          console.warn(`[Scale] Faltó grilla en col ${finalCol}, row ${finalRow}`);
+          break; // OOB verdadero
+        }
+
+        currentCol = finalCol;
+        currentRow = finalRow;
+        HexGrid.setNoteData(nextHex.id, currentValue.toString(), 0);
+        await sleep(80); // Animación
+      }
+
+      // 2. Secuencia Generadora Negativa
+      let currentColNeg = origin.col;
+      let currentRowNeg = origin.row;
+      let currentValueNeg = 0;
+
+      for (let i = 1; i <= limiteNegativo; i++) {
+        currentValueNeg = (currentValueNeg + smallGen) % edo;
+        // Caminar matemáticamente usando coordenadas numéricas
+        let rawCoords = HexGrid.wilsonWalk(currentColNeg, currentRowNeg, -genX, -genY);
+        
+        let finalCol = rawCoords.col;
+        let finalRow = rawCoords.row;
+
+        // Wrap-around espacial en reversa: Si caemos por detrás del origen, caminamos un vector de octava
+        let loopLimit = 0;
+        while (finalCol < origin.col && deltaCol > 0) {
+          let wrap = HexGrid.wilsonWalk(finalCol, finalRow, octX, octY);
+          finalCol = wrap.col;
+          finalRow = wrap.row;
+          if (++loopLimit > 20) break;
+        }
+        // Para evitar bugs si la octava es negativa en columnas (aunque en teoría deltaCol > 0)
+        loopLimit = 0;
+        while (finalCol >= origin.col + deltaCol && deltaCol > 0) {
+          let wrap = HexGrid.wilsonWalk(finalCol, finalRow, -octX, -octY);
+          finalCol = wrap.col;
+          finalRow = wrap.row;
+          if (++loopLimit > 20) break;
+        }
+
+        let nextHex = HexGrid.getHex(finalCol, finalRow);
+        if (!nextHex) {
+          console.warn(`[Scale] Faltó grilla en col ${finalCol}, row ${finalRow}`);
+          break; // OOB verdadero
+        }
+
+        currentColNeg = finalCol;
+        currentRowNeg = finalRow;
+        HexGrid.setNoteData(nextHex.id, currentValueNeg.toString(), 0);
+        await sleep(80); // Animación
+      }
+    }
+
+    // --- PROPAGACIÓN A MÚLTIPLES OCTAVAS ---
+    /**
+     * Propaga la octava base (0) hacia arriba y hacia abajo basándose
+     * en los vectores estructurales. Genera múltiples capas horizontales y las
+     * colorea de acuerdo a su distancia armónica para un fácil reconocimiento visual.
+     */
+    async function propagateOctaves() {
+      // Filtrar para propagar ÚNICAMENTE la octava base (0). 
+      // Esto previene que la nota guía de la octava 1 (colocada manualmente) 
+      // se propague hacia abajo y sobrescriba los metadatos de la nota raíz.
+      const mapped = HexGrid.getMappedNotes().filter(h => parseInt(h.noteOctave) === 0);
+      let octX = selectedTriplet.left[1];
+      let octY = selectedTriplet.right[1];
+      
+      if (isFlipped) {
+        // En la topología de Erv Wilson, un reflejo vertical equivale
+        // exactamente a intercambiar los ejes X e Y del generador
+        const temp = octX;
+        octX = octY;
+        octY = temp;
+      }
+      
+      // Paleta simétrica y muy notoria para diferenciar octavas
+      const gradientColors = [
+        'rgba(153, 204, 255, 0.4)', // +/- 1: Azul Pastel
+        'rgba(153, 255, 204, 0.4)', // +/- 2: Verde Pastel
+        'rgba(255, 255, 153, 0.4)', // +/- 3: Amarillo Pastel
+        'rgba(255, 204, 153, 0.4)', // +/- 4: Naranja Pastel
+        'rgba(255, 153, 204, 0.4)', // +/- 5: Rosa Pastel
+        'rgba(204, 153, 255, 0.4)', // +/- 6: Púrpura Pastel
+      ];
+      
+      const upperColors = gradientColors;
+      const lowerColors = gradientColors;
+
+      // Almacenamos el estado inicial, porque si iteramos `mapped` y vamos
+      // añadiendo más, será infinito
+      const currentNotes = [...mapped];
+
+      // Hacia arriba (+1, +2, +3...)
+      for (let octLevel = 1; octLevel <= 15; octLevel++) {
+        let placedAny = false;
+        const color = upperColors[(octLevel - 1) % upperColors.length];
+        const stepX = octX * octLevel;
+        const stepY = octY * octLevel;
+
+        for (let note of mapped) {
+          const targetCoords = HexGrid.wilsonWalk(note.col, note.row, stepX, stepY);
+          if (targetCoords) {
+            const realHex = HexGrid.getHex(targetCoords.col, targetCoords.row);
+            if (realHex) {
+               HexGrid.setHexColor(realHex.id, color);
+               HexGrid.setNoteData(realHex.id, note.textNode.textContent, octLevel);
+               placedAny = true;
+               await sleep(10);
+            }
+          }
+        }
+        if (!placedAny) break; // Si ya no cabe ninguna nota, paramos de subir
+      }
+
+      // Hacia abajo (-1, -2, -3...)
+      for (let octLevel = 1; octLevel <= 15; octLevel++) {
+        let placedAny = false;
+        const color = lowerColors[(octLevel - 1) % lowerColors.length];
+        const stepX = -octX * octLevel;
+        const stepY = -octY * octLevel;
+
+        for (let note of mapped) {
+          const targetCoords = HexGrid.wilsonWalk(note.col, note.row, stepX, stepY);
+          if (targetCoords) {
+            const realHex = HexGrid.getHex(targetCoords.col, targetCoords.row);
+            if (realHex) {
+               HexGrid.setHexColor(realHex.id, color);
+               HexGrid.setNoteData(realHex.id, note.textNode.textContent, -octLevel);
+               placedAny = true;
+               await sleep(10);
+            }
+          }
+        }
+        if (!placedAny) break;
+      }
+
+      // Colorear explícitamente la octava base (0) DESPUÉS de propagar.
+      // Esto previene que propagaciones superpuestas alteren el color de la octava raíz.
+      // Color muy distinto para la octava 0 (Gris Claro Neutro)
+      const baseColor = 'rgba(200, 200, 200, 0.5)';
+      for (let note of mapped) {
+        HexGrid.setHexColor(note.id, baseColor);
+      }
+    }
+
+    // --- PROPAGACIÓN EN MOSAICO INFINITO (AUTOMÁTICA) ---
+    // Resuelve analíticamente la Ecuación Diofántica: |octX * dy - octY * dx| = EDO
+    // para encontrar el vector de período secundario de la topología MOS que
+    // asegure una teselación perfecta (sin huecos ni superposiciones) en dirección vertical.
+    /**
+     * Escanea el espacio cartesiano de vectores de repetición en el plano para
+     * encontrar el vector óptimo que sella el mosaico 2D (Tessellation) del teclado EDO.
+     * @param {number} edo - Divisiones de la octava (área del mosaico).
+     * @param {number} octX - Paso en el eje X de la octava estructural.
+     * @param {number} octY - Paso en el eje Y de la octava estructural.
+     * @returns {Object|null} Vector {dx, dy} de la propagación vertical.
+     */
+    function calculateTessellationVector(edo, octX, octY) {
+      let bestVector = null;
+      let minHorizontalShift = Infinity;
+      let minDistance = Infinity;
+
+      for (let dx = -50; dx <= 50; dx++) {
+        for (let dy = -50; dy <= 50; dy++) {
+          if (dx === 0 && dy === 0) continue;
+          
+          const area = Math.abs(octX * dy - octY * dx);
+          if (area === parseInt(edo)) {
+            if (dy > dx) { // Dirección Hacia Arriba
+              const deltaCol = Math.abs(dx + dy);
+              const distance = Math.abs(dx) + Math.abs(dy);
+              
+              if (deltaCol < minHorizontalShift || (deltaCol === minHorizontalShift && distance < minDistance)) {
+                minHorizontalShift = deltaCol;
+                minDistance = distance;
+                bestVector = { dx, dy };
+              }
+            }
+          }
+        }
+      }
+      return bestVector;
+    }
+
+    /**
+     * Utiliza el vector de teselación calculado para copiar visualmente el teclado entero 
+     * en mosaicos adyacentes, creando un plano infinito sin interrupciones.
+     * Las notas propagadas gradualmente pierden opacidad en los márgenes.
+     * @param {number} repX - Vector de repetición X calculado analíticamente.
+     * @param {number} repY - Vector de repetición Y calculado analíticamente.
+     */
+    async function propagateTessellation(repX, repY) {
+      const currentBoardNotes = HexGrid.getMappedNotes().map(h => ({
+        col: h.col,
+        row: h.row,
+        text: h.textNode.textContent,
+        degree: h.noteDegree,
+        octave: h.noteOctave,
+        bgColor: h.bgColor
+      }));
+
+      const repeatLimit = 20;
+
+      for (let rep = 1; rep <= repeatLimit; rep++) {
+        let placedAny = false;
+        const stepX = repX * rep;
+        const stepY = repY * rep;
+        
+        const adjustOpacity = (colorStr, repIndex) => {
+           if (!colorStr) return colorStr;
+           const rgbaMatch = colorStr.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([0-9.]+)\)/);
+           if (rgbaMatch) {
+             let alpha = parseFloat(rgbaMatch[4]);
+             // Caída de opacidad más drástica (-0.15)
+             alpha = Math.max(0.05, alpha - (repIndex * 0.15));
+             return `rgba(${rgbaMatch[1]}, ${rgbaMatch[2]}, ${rgbaMatch[3]}, ${alpha})`;
+           }
+           return colorStr;
+        };
+
+        for (let note of currentBoardNotes) {
+          const targetCoords = HexGrid.wilsonWalk(note.col, note.row, stepX, stepY);
+          if (targetCoords) {
+            const targetHex = HexGrid.getHex(targetCoords.col, targetCoords.row);
+            
+            if (targetHex && HexGrid.getText(targetHex.id) === '') {
+               const newColor = adjustOpacity(note.bgColor, rep);
+               HexGrid.setHexColor(targetHex.id, newColor);
+               // Asignamos la metadata exactamente igual a la original copiada
+               HexGrid.setNoteData(targetHex.id, note.text, note.octave);
+               placedAny = true;
+            }
+          }
+        }
+        if (!placedAny) break;
+      }
+    }
+
+    // Toggle Panel functionality
+    document.getElementById('toggle-panel-btn').addEventListener('click', (e) => {
+      const content = document.getElementById('panel-content');
+      if (content.style.display === 'none') {
+        content.style.display = 'block';
+        e.target.textContent = '_';
+      } else {
+        content.style.display = 'none';
+        e.target.textContent = '□';
+      }
+    });
+
+    // Mode Toggle functionality
+    document.getElementById('mode-toggle').addEventListener('click', () => {
+      document.body.classList.toggle('performance-mode');
+      const isPerf = document.body.classList.contains('performance-mode');
+      const modeBtn = document.getElementById('mode-toggle');
+      
+      if (isPerf) {
+        modeBtn.textContent = 'Volver al Modo de edición';
+      } else {
+        modeBtn.textContent = 'Modo de ejecución';
+      }
+      
+      // Ajustamos el tamaño del grid si es necesario
+      if (window.HexGrid) window.HexGrid.resize();
+    });
+
+  </script>
+</body>
+</html>

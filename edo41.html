@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wilson T41 Hex Keyboard - 41 EDO Hierarchized</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at 50% 50%, #1a1a24 0%, #0d0d12 100%);
+      color: #E2E2E2;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: none;
+    }
+    h1 { 
+      color: #a0a0ff; 
+      font-weight: 300; 
+      margin: 60px 0 0 0;
+      z-index: 10;
+    }
+    .back-btn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: #fff;
+      text-decoration: none;
+      background: rgba(255,255,255,0.1);
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      z-index: 10;
+    }
+    
+    #hex-container {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0; left: 0;
+      cursor: crosshair;
+    }
+
+    #hex-container svg text {
+      font-size: 8.5px !important; 
+    }
+
+    /* Side Panel Styles */
+    #side-panel {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      width: 320px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      background: rgba(20, 20, 30, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      overflow-y: auto;
+    }
+
+    #side-panel::-webkit-scrollbar { width: 6px; }
+    #side-panel::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); border-radius: 12px; }
+    #side-panel::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 6px; }
+
+    .input-group {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .input-group label { font-size: 0.9rem; color: #ddd; }
+    .input-group input, .input-group select {
+      width: 100px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      padding: 5px 10px;
+      color: #fff;
+      font-family: inherit;
+      outline: none;
+    }
+  
+    /* Performance Mode */
+    body.performance-mode > *:not(#hex-container):not(#mode-toggle):not(script) {
+      display: none !important;
+    }
+    #mode-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      background: linear-gradient(135deg, #4b6cb7, #182848);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      transition: all 0.2s;
+    }
+    #mode-toggle:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+
+    /* Bloqueo de hexágonos en Modo Edición */
+    body.edit-locked:not(.performance-mode) #hex-container g {
+      pointer-events: none;
+    }
+  </style>
+
+</head>
+<body class="edit-locked">
+  <a href="index.html" class="back-btn">← Volver al Menú</a>
+  <h1 style="position: absolute; top: 20px; margin: 0; left: 50%; transform: translateX(-50%);">41 EDO, GEN 24, 7/12: [4/7, 3/5]</h1>
+  
+  <div id="hex-container"></div>
+
+  <div id="side-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+      <h2 style="margin: 0; font-size: 1.1rem; color: #a0a0ff; text-transform: uppercase;">Control Panel</h2>
+      <button id="toggle-panel-btn" style="background: none; border: none; color: #fff; cursor: pointer; font-size: 1.2rem; line-height: 1; padding: 0 5px; opacity: 0.7;">_</button>
+    </div>
+    
+    <div id="panel-content">
+      <!-- Highlight Sets / Chords -->
+      <div id="highlight-container" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px;">
+        <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 1rem;">Highlight Sets / Chords</h3>
+        <div class="input-group">
+          <label for="set-input">Set (ej. 0,4,7)</label>
+          <input type="text" id="set-input" placeholder="0, 4, 7" style="width: 120px;">
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <button id="btn-highlight" style="flex: 1; background: #2b8a3e; border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px;">Highlight</button>
+          <button id="btn-clear-highlight" style="flex: 1; background: rgba(255,100,100,0.2); border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px;">Clear</button>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <div style="flex: 1; display: flex; align-items: center; justify-content: space-between;">
+             <label style="font-size: 0.8rem; color: #ddd;">Tn:</label>
+             <input type="number" id="tn-input" value="0" min="0" max="40" style="width: 50px;">
+          </div>
+          <div style="flex: 1; display: flex; align-items: center; justify-content: space-between;">
+             <label style="font-size: 0.8rem; color: #ddd;">In:</label>
+             <input type="number" id="in-input" value="0" min="0" max="40" style="width: 50px;">
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <button id="btn-apply-tn" style="flex: 1; background: #5555ff; border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px;">Apply Tn</button>
+          <button id="btn-apply-in" style="flex: 1; background: #9d50bb; border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px;">Apply In</button>
+        </div>
+      </div>
+      
+      <!-- OSC Connection -->
+      <div id="osc-container" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+        <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 1rem; display: flex; justify-content: space-between; align-items: center;">
+          OSC Connection
+          <div style="display: flex; gap: 5px;">
+             <span id="osc-led-send" style="width: 10px; height: 10px; border-radius: 50%; background: #ff9b9b; display: inline-block;"></span>
+             <span id="osc-led-link" style="width: 10px; height: 10px; border-radius: 50%; background: #ff9b9b; display: inline-block;"></span>
+          </div>
+        </h3>
+        <div class="input-group">
+          <label for="osc-ip">Target IP</label>
+          <input type="text" id="osc-ip" value="127.0.0.1">
+        </div>
+        <div class="input-group">
+          <label for="osc-port">Target UDP Port</label>
+          <input type="number" id="osc-port" value="57120">
+        </div>
+        <div class="input-group">
+          <label for="osc-base">Base Root Float</label>
+          <input type="number" id="osc-base" value="133.0" step="0.1">
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+          <label style="color: #ddd; font-size: 0.9rem; flex: 1;"><input type="checkbox" id="osc-toggle"> Enable OSC</label>
+        </div>
+        <div class="input-group" style="margin-top: 10px;">
+          <label for="osc-octave">Octave Shift</label>
+          <select id="osc-octave" style="width: 100px; padding: 2px;">
+            <option value="3.0">3.0</option>
+            <option value="2.0">2.0</option>
+            <option value="1.0">1.0</option>
+            <option value="0.0" selected>0.0</option>
+            <option value="-1.0">-1.0</option>
+            <option value="-2.0">-2.0</option>
+            <option value="-3.0">-3.0</option>
+          </select>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <button id="btn-panic-notes" style="flex: 1; background: #d9534f; border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px; font-size: 0.8rem;">All Notes Off</button>
+          <button id="btn-panic-sound" style="flex: 1; background: #c9302c; border: none; border-radius: 4px; color: white; cursor: pointer; padding: 5px; font-size: 0.8rem;">All Sound Off</button>
+        </div>
+        <div id="osc-monitor" style="margin-top: 10px; padding: 8px; background: #000; color: #0f0; font-family: monospace; font-size: 0.75rem; border-radius: 4px; height: 40px; overflow-y: auto;">
+          Esperando WebSocket...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('toggle-panel-btn').addEventListener('click', (e) => {
+      const content = document.getElementById('panel-content');
+      if (content.style.display === 'none') {
+        content.style.display = 'block';
+        e.target.textContent = '_';
+      } else {
+        content.style.display = 'none';
+        e.target.textContent = '□';
+      }
+    });
+  </script>
+
+  <script type="module">
+    import HexGrid from './hexgrid.js';
+    import { initEdo41Module, renderEdo41Keyboard } from './edo41.js';
+    
+    // Iniciar el módulo primero para generar el teclado base
+    initEdo41Module('hex-container');
+
+    // --- LÓGICA DE CODIFICACIÓN BINARIA OSC 1.0 ---
+    class OSCMessage {
+      constructor(address, types, args) {
+        this.address = address;
+        this.types = "," + types;
+        this.args = args;
+      }
+
+      encode() {
+        const addrBuf = this.stringToBuffer(this.address);
+        const typesBuf = this.stringToBuffer(this.types);
+        const argsBuf = this.argsToBuffer();
+
+        const totalSize = addrBuf.length + typesBuf.length + argsBuf.length;
+        const buffer = new Uint8Array(totalSize);
+        buffer.set(addrBuf, 0);
+        buffer.set(typesBuf, addrBuf.length);
+        buffer.set(argsBuf, addrBuf.length + typesBuf.length);
+        return buffer.buffer;
+      }
+
+      stringToBuffer(str) {
+        const content = new TextEncoder().encode(str);
+        const len = content.length + 1; // null terminator
+        const paddedLen = Math.ceil(len / 4) * 4;
+        const buffer = new Uint8Array(paddedLen);
+        buffer.set(content);
+        return buffer;
+      }
+
+      argsToBuffer() {
+        let size = 0;
+        const tChars = this.types.substring(1).split("");
+        tChars.forEach(t => { if (t==="i" || t==="f") size += 4; });
+        
+        const buffer = new ArrayBuffer(size);
+        const view = new DataView(buffer);
+        let offset = 0;
+        tChars.forEach((t, idx) => {
+          if (t === "i") { view.setInt32(offset, this.args[idx], false); offset += 4; }
+          else if (t === "f") { view.setFloat32(offset, this.args[idx], false); offset += 4; }
+        });
+        return new Uint8Array(buffer);
+      }
+    }
+
+    // --- OSC STATE & SOCKET ---
+    const oscStatus = {
+      enabled: false,
+      linked: false,
+      ip: "127.0.0.1",
+      port: 57120,
+      socket: null
+    };
+
+    const oscMonitor = document.getElementById("osc-monitor");
+    const oscLog = [];
+    
+    function updateOscMonitor(msg) {
+      oscLog.push(msg);
+      if (oscLog.length > 3) oscLog.shift();
+      if (oscMonitor) oscMonitor.innerHTML = oscLog.join("<br>");
+    }
+
+    function updateStatusVisuals() {
+      const ledSend = document.getElementById("osc-led-send");
+      if (ledSend) ledSend.style.background = oscStatus.enabled ? "#2b8a3e" : "#ff9b9b";
+      const ledLink = document.getElementById("osc-led-link");
+      if (ledLink) ledLink.style.background = oscStatus.linked ? "#2b8a3e" : "#ff9b9b";
+    }
+
+    function initWebSocket() {
+      if (oscStatus.socket) oscStatus.socket.close();
+      const wsUrl = `ws://${window.location.hostname || "localhost"}:8081`;
+      oscStatus.socket = new WebSocket(wsUrl);
+      oscStatus.socket.binaryType = "arraybuffer";
+
+      oscStatus.socket.onopen = () => {
+        oscStatus.linked = true;
+        updateStatusVisuals();
+        updateOscMonitor("Vínculo Bridge Establecido (WS)");
+      };
+
+      oscStatus.socket.onclose = () => {
+        oscStatus.linked = false;
+        updateStatusVisuals();
+        updateOscMonitor("Vínculo Bridge Perdido. Reintentando...");
+        setTimeout(initWebSocket, 5000);
+      };
+    }
+    initWebSocket();
+
+    window.dispatchOSC = function(address, types, args) {
+      const forcedTypes = types.replace(/i/g, "f");
+      const visualArgs = args.map(a => typeof a === "number" ? a.toFixed(1) : a).join(", ");
+      updateOscMonitor(`[${address}, ${visualArgs}]`);
+
+      if (oscStatus.enabled && oscStatus.linked && oscStatus.socket.readyState === WebSocket.OPEN) {
+        const msg = new OSCMessage(address, forcedTypes, args);
+        const packet = msg.encode();
+        
+        oscStatus.socket.send(JSON.stringify({
+          type: "osc",
+          ip: oscStatus.ip,
+          port: oscStatus.port,
+          message: Array.from(new Uint8Array(packet))
+        }));
+      }
+    };
+
+    document.getElementById("osc-ip").addEventListener("input", (e) => oscStatus.ip = e.target.value);
+    document.getElementById("osc-port").addEventListener("input", (e) => oscStatus.port = parseInt(e.target.value) || 0);
+    document.getElementById("osc-toggle").addEventListener("change", (e) => {
+      oscStatus.enabled = e.target.checked;
+      updateStatusVisuals();
+      updateOscMonitor(oscStatus.enabled ? "OSC Habilitado" : "OSC Deshabilitado");
+    });
+
+    document.getElementById("osc-octave").addEventListener("change", (e) => {
+      const val = parseFloat(e.target.value);
+      if (typeof window.dispatchOSC === 'function') {
+        window.dispatchOSC('/param/a/octave', 'f', [val]);
+      }
+    });
+
+    document.getElementById("btn-panic-notes").addEventListener("click", () => {
+      if (typeof window.dispatchOSC === 'function') {
+        window.dispatchOSC('/allnotesoff', '', []);
+      }
+    });
+
+    document.getElementById("btn-panic-sound").addEventListener("click", () => {
+      if (typeof window.dispatchOSC === 'function') {
+        window.dispatchOSC('/allsoundoff', '', []);
+      }
+    });
+
+    window.getOscBaseFloat = function() {
+      return parseFloat(document.getElementById("osc-base").value) || 0.0;
+    };
+    
+    window.getActiveEdo = function() {
+      return 41;
+    };
+
+    // --- HIGHLIGHT SETS / CHORDS LOGIC ---
+    let baseSet = [];
+    let currentSet = [];
+
+    function highlightCurrentSet() {
+      renderEdo41Keyboard(); // Restaura los bordes y colores específicos de 41 EDO
+      if (currentSet.length === 0) return;
+      
+      HexGrid.hexagons.forEach(hex => {
+        if (hex.noteDegree !== undefined && currentSet.includes(hex.noteDegree)) {
+          hex.polygon.style.stroke = 'rgba(255, 255, 0, 0.9)'; // Bright yellow highlight
+          hex.polygon.style.strokeWidth = '4px';
+        }
+      });
+    }
+
+    document.getElementById('btn-highlight').addEventListener('click', () => {
+      const input = document.getElementById('set-input').value;
+      if (!input.trim()) return;
+      
+      baseSet = input.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+      currentSet = [...baseSet];
+      highlightCurrentSet();
+    });
+
+    document.getElementById('btn-clear-highlight').addEventListener('click', () => {
+      document.getElementById('set-input').value = '';
+      baseSet = [];
+      currentSet = [];
+      highlightCurrentSet();
+    });
+
+    document.getElementById('btn-apply-tn').addEventListener('click', () => {
+      const tn = parseInt(document.getElementById('tn-input').value) || 0;
+      if (baseSet.length === 0) return;
+      // Operación en mod 41, basada siempre en el baseSet original
+      currentSet = baseSet.map(n => ((n + tn) % 41 + 41) % 41);
+      highlightCurrentSet();
+    });
+
+    document.getElementById('btn-apply-in').addEventListener('click', () => {
+      const ind = parseInt(document.getElementById('in-input').value) || 0;
+      if (baseSet.length === 0) return;
+      // Inversión en mod 41, basada siempre en el baseSet original
+      currentSet = baseSet.map(n => ((ind - n) % 41 + 41) % 41);
+      highlightCurrentSet();
+    });
+
+  </script>
+
+  <button id="mode-toggle">Modo de ejecución</button>
+  <script>
+    // Performance Mode Toggle
+    const modeToggleBtn = document.getElementById('mode-toggle');
+    if (modeToggleBtn) {
+      modeToggleBtn.addEventListener('click', () => {
+        document.body.classList.toggle('performance-mode');
+        if (document.body.classList.contains('performance-mode')) {
+          modeToggleBtn.textContent = 'Volver al Modo de edición';
+        } else {
+          modeToggleBtn.textContent = 'Modo de ejecución';
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>
