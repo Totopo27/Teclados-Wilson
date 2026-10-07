@@ -326,7 +326,13 @@
     function updateOscMonitor(msg) {
       oscLog.push(msg);
       if (oscLog.length > 3) oscLog.shift();
-      if (oscMonitor) oscMonitor.innerHTML = oscLog.join("<br>");
+      if (oscMonitor) {
+        oscMonitor.textContent = '';
+        oscLog.forEach(function(entry, i) {
+          if (i > 0) oscMonitor.appendChild(document.createElement('br'));
+          oscMonitor.appendChild(document.createTextNode(entry));
+        });
+      }
     }
 
     function updateStatusVisuals() {

@@ -77,8 +77,9 @@ const server = http.createServer((req, res) => {
                 res.writeHead(404, { 'Content-Type': 'text/plain' });
                 res.end('File not found');
             } else {
+                console.error('[HTTP ERROR]', error.code, resolvedPath);
                 res.writeHead(500, { 'Content-Type': 'text/plain' });
-                res.end('Server error: ' + error.code);
+                res.end('Internal Server Error');
             }
         } else {
             res.writeHead(200, { 'Content-Type': contentType });
@@ -183,7 +184,7 @@ wss.on('connection', (ws) => {
 });
 
 udpClient.on('error', (err) => {
-    console.log(`[UDP SERVER ERROR]:\n${err.stack}`);
-    udpClient.close();
+    console.error(`[UDP ERROR] ${err.message}`);
+    // Do not close the socket on transient errors — the bridge stays alive
 });
 

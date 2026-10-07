@@ -528,7 +528,18 @@ const HexGrid = {
     if (hex) {
       hex.text = text;
       if (hex.textNode) {
-        hex.textNode.innerHTML = text; // Usamos innerHTML para soportar <tspan>
+        // Safe DOM construction: parse tspan elements without raw innerHTML
+        if (/<tspan[\s>]/i.test(text)) {
+          const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg"><text>${text}</text></svg>`;
+          const parsed = new DOMParser().parseFromString(svgMarkup, 'image/svg+xml');
+          const parsedText = parsed.querySelector('text');
+          while (hex.textNode.firstChild) hex.textNode.removeChild(hex.textNode.firstChild);
+          if (parsedText) {
+            while (parsedText.firstChild) hex.textNode.appendChild(parsedText.firstChild);
+          }
+        } else {
+          hex.textNode.textContent = text;
+        }
       }
     } else {
       console.warn(`[HexGrid] setText: hex with id ${id} not found.`);
@@ -560,7 +571,7 @@ const HexGrid = {
       hex.noteDegree = undefined;
       hex.noteOctave = undefined;
       if (hex.textNode) {
-        hex.textNode.innerHTML = ''; // Limpiar innerHTML
+        hex.textNode.textContent = '';
       }
     });
   },
