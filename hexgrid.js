@@ -182,7 +182,7 @@ const HexGrid = {
               const userBase = parseInt(window.userBaseMidiNote !== undefined ? window.userBaseMidiNote : 60, 10);
               const pureDegree = parseFloat(hex.noteDegree) + (parseInt(hex.noteOctave || 0) * edo);
               const midiNote = Math.max(0, Math.min(127, Math.round(userBase + pureDegree)));
-              window.dispatchMIDI('noteon', midiNote, 127);
+              window.dispatchMIDI('noteon', midiNote, 127, activeNoteFloat);
             }
           } else {
             console.log(`[HexGrid] Note ON Suppressed (Overlap) -> id: ${hex.id}, noteFloat: ${activeNoteFloat}`);
@@ -235,7 +235,7 @@ const HexGrid = {
                 const userBase = parseInt(window.userBaseMidiNote !== undefined ? window.userBaseMidiNote : 60, 10);
                 const pureDegree = (activeNoteFloat - base); // Reverse engineering pure degree from activeNoteFloat
                 const midiNote = Math.max(0, Math.min(127, Math.round(userBase + pureDegree)));
-                window.dispatchMIDI('noteoff', midiNote, 0);
+                window.dispatchMIDI('noteoff', midiNote, 0, activeNoteFloat);
               }
             } else {
               console.log(`[HexGrid] Note OFF Suppressed (Overlap) -> id: ${hex.id}, noteFloat: ${activeNoteFloat}`);
@@ -753,14 +753,15 @@ window.userBaseMidiNote = parseInt(localStorage.getItem('userBaseMidiNote') || '
 window.userMidiChannel = parseInt(localStorage.getItem('userMidiChannel') || '1', 10);
 
 // Global MIDI dispatcher (overrides specific ones if any)
-window.dispatchMIDI = function(eventType, noteNumber, velocity) {
+window.dispatchMIDI = function(eventType, noteNumber, velocity, noteFloat) {
     if (window.oscStatus && window.oscStatus.linked && window.oscStatus.socket && window.oscStatus.socket.readyState === 1) {
         window.oscStatus.socket.send(JSON.stringify({
             type: "midi",
             event: eventType,
             channel: window.userMidiChannel,
             note: noteNumber,
-            velocity: velocity
+            velocity: velocity,
+            noteFloat: noteFloat
         }));
     }
 };
