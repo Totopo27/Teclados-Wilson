@@ -179,7 +179,9 @@ const HexGrid = {
               window.dispatchOSC('/mnote', 'ff', [activeNoteFloat, 127.0]);
             }
             if (typeof window.dispatchMIDI === 'function') {
-              const midiNote = Math.max(0, Math.min(127, Math.round(noteFloat)));
+              const userBase = parseInt(window.userBaseMidiNote !== undefined ? window.userBaseMidiNote : 60, 10);
+              const pureDegree = parseFloat(hex.noteDegree) + (parseInt(hex.noteOctave || 0) * edo);
+              const midiNote = Math.max(0, Math.min(127, Math.round(userBase + pureDegree)));
               window.dispatchMIDI('noteon', midiNote, 127);
             }
           } else {
@@ -228,7 +230,11 @@ const HexGrid = {
                 window.dispatchOSC('/mnote', 'ff', [activeNoteFloat, 0.0]);
               }
               if (typeof window.dispatchMIDI === 'function') {
-                const midiNote = Math.max(0, Math.min(127, Math.round(activeNoteFloat)));
+                const edo = typeof window.getActiveEdo === 'function' ? window.getActiveEdo() : 12;
+                const base = typeof window.getOscBaseFloat === 'function' ? window.getOscBaseFloat() : 0.0;
+                const userBase = parseInt(window.userBaseMidiNote !== undefined ? window.userBaseMidiNote : 60, 10);
+                const pureDegree = (activeNoteFloat - base); // Reverse engineering pure degree from activeNoteFloat
+                const midiNote = Math.max(0, Math.min(127, Math.round(userBase + pureDegree)));
                 window.dispatchMIDI('noteoff', midiNote, 0);
               }
             } else {
@@ -739,3 +745,69 @@ const HexGrid = {
 };
 
 export default HexGrid;
+
+// ==========================================
+// MIDI CONFIGURATION & UI INJECTION
+// ==========================================
+window.userBaseMidiNote = parseInt(localStorage.getItem('userBaseMidiNote') || '60', 10);
+window.userMidiChannel = parseInt(localStorage.getItem('userMidiChannel') || '1', 10);
+
+// Global MIDI dispatcher (overrides specific ones if any)
+window.dispatchMIDI = function(eventType, noteNumber, velocity) {
+    if (window.oscStatus && window.oscStatus.linked && window.oscStatus.socket && window.oscStatus.socket.readyState === 1) {
+        window.oscStatus.socket.send(JSON.stringify({
+            type: "midi",
+            event: eventType,
+            channel: window.userMidiChannel,
+            note: noteNumber,
+            velocity: velocity
+        }));
+    }
+};
+
+// UI Injector
+document.addEventListener("DOMContentLoaded", () => {
+    const uiPanel = document.getElementById('ui-panel');
+    if (!uiPanel) return;
+
+    const midiConfigContainer = document.createElement('div');
+    midiConfigContainer.style.marginTop = '15px';
+    midiConfigContainer.style.paddingTop = '15px';
+    midiConfigContainer.style.borderTop = '1px solid rgba(255,255,255,0.2)';
+    midiConfigContainer.innerHTML = `
+        <div class="ui-title">Configuración MIDI (Salida)</div>
+        <div class="input-group" style="display: flex; gap: 10px; margin-bottom: 5px;">
+            <div style="flex: 1;">
+                <label style="font-size: 0.8rem; color: #ccc;">Canal MIDI</label>
+                <select id="global-midi-channel" style="width: 100%; padding: 4px; background: rgba(0,0,0,0.5); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;">
+                    ${Array.from({length: 16}, (_, i) => \`<option value="\${i+1}">\${i+1}</option>\`).join('')}
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 0.8rem; color: #ccc;">Base Nota (Grado 0)</label>
+                <input type="number" id="global-midi-base" min="0" max="127" style="width: 100%; padding: 4px; background: rgba(0,0,0,0.5); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;">
+            </div>
+        </div>
+        <div style="font-size: 0.75rem; color: #888;">
+            El Canal MIDI y la Nota Base determinan qué envía este teclado al Bridge / midiControl.
+        </div>
+    `;
+    
+    uiPanel.appendChild(midiConfigContainer);
+
+    const chSelect = document.getElementById('global-midi-channel');
+    const baseInput = document.getElementById('global-midi-base');
+
+    chSelect.value = window.userMidiChannel;
+    baseInput.value = window.userBaseMidiNote;
+
+    chSelect.addEventListener('change', (e) => {
+        window.userMidiChannel = parseInt(e.target.value, 10);
+        localStorage.setItem('userMidiChannel', window.userMidiChannel);
+    });
+
+    baseInput.addEventListener('change', (e) => {
+        window.userBaseMidiNote = parseInt(e.target.value, 10);
+        localStorage.setItem('userBaseMidiNote', window.userBaseMidiNote);
+    });
+});
