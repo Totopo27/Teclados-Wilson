@@ -163,8 +163,8 @@ const HexGrid = {
           HexGrid.onHexClickCallback({ id: hex.id, col: col, row: row });
         }
 
-        // --- OSC BINDING (NOTE ON) ---
-        if (hex.noteDegree !== undefined && typeof window.dispatchOSC === 'function') {
+        // --- OSC & MIDI BINDING (NOTE ON) ---
+        if (hex.noteDegree !== undefined && (typeof window.dispatchOSC === 'function' || typeof window.dispatchMIDI === 'function')) {
           const edo = typeof window.getActiveEdo === 'function' ? window.getActiveEdo() : 12;
           const base = typeof window.getOscBaseFloat === 'function' ? window.getOscBaseFloat() : 0.0;
           const noteFloat = base + parseFloat(hex.noteDegree) + (parseInt(hex.noteOctave || 0) * edo);
@@ -175,7 +175,13 @@ const HexGrid = {
           const currentCount = HexGrid.activeNotesMap.get(activeNoteKey) || 0;
           
           if (currentCount === 0) {
-            window.dispatchOSC('/mnote', 'ff', [activeNoteFloat, 127.0]);
+            if (typeof window.dispatchOSC === 'function') {
+              window.dispatchOSC('/mnote', 'ff', [activeNoteFloat, 127.0]);
+            }
+            if (typeof window.dispatchMIDI === 'function') {
+              const midiNote = Math.max(0, Math.min(127, Math.round(noteFloat)));
+              window.dispatchMIDI('noteon', midiNote, 127);
+            }
           } else {
             console.log(`[HexGrid] Note ON Suppressed (Overlap) -> id: ${hex.id}, noteFloat: ${activeNoteFloat}`);
           }
@@ -209,8 +215,8 @@ const HexGrid = {
         
         console.log(`[HexGrid] Note OFF -> id: ${hex.id}`);
         
-        // --- OSC BINDING (NOTE OFF) ---
-        if (activeNoteKey !== null && activeNoteFloat !== null && typeof window.dispatchOSC === 'function') {
+        // --- OSC & MIDI BINDING (NOTE OFF) ---
+        if (activeNoteKey !== null && activeNoteFloat !== null && (typeof window.dispatchOSC === 'function' || typeof window.dispatchMIDI === 'function')) {
           const currentCount = HexGrid.activeNotesMap.get(activeNoteKey) || 0;
           
           if (currentCount > 0) {
@@ -218,7 +224,13 @@ const HexGrid = {
             HexGrid.activeNotesMap.set(activeNoteKey, newCount);
             
             if (newCount === 0) {
-              window.dispatchOSC('/mnote', 'ff', [activeNoteFloat, 0.0]);
+              if (typeof window.dispatchOSC === 'function') {
+                window.dispatchOSC('/mnote', 'ff', [activeNoteFloat, 0.0]);
+              }
+              if (typeof window.dispatchMIDI === 'function') {
+                const midiNote = Math.max(0, Math.min(127, Math.round(activeNoteFloat)));
+                window.dispatchMIDI('noteoff', midiNote, 0);
+              }
             } else {
               console.log(`[HexGrid] Note OFF Suppressed (Overlap) -> id: ${hex.id}, noteFloat: ${activeNoteFloat}`);
             }

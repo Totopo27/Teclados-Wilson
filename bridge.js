@@ -105,6 +105,9 @@ wss.on('connection', (ws) => {
                         console.error('[UDP ERROR]', err);
                     }
                 });
+            } else if (msg.type === 'midi') {
+                // Reenviar evento MIDI en formato estructurado a cualquier listener o servicio midiControl
+                console.log(`[MIDI EVENT] ${msg.event.toUpperCase()} -> Ch: ${msg.channel || 1}, Nota: ${msg.note}, Vel: ${msg.velocity !== undefined ? msg.velocity : 127}`);
             }
         } catch (e) {
             console.error('[PROCESS ERROR]', e.message);

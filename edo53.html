@@ -373,6 +373,19 @@
       }
     };
 
+    window.dispatchMIDI = function(eventType, noteNumber, velocity) {
+      if (oscStatus.linked && oscStatus.socket.readyState === WebSocket.OPEN) {
+        const channel = parseInt(document.getElementById("midi-channel")?.value || 1, 10);
+        oscStatus.socket.send(JSON.stringify({
+          type: "midi",
+          event: eventType,
+          channel: channel,
+          note: noteNumber,
+          velocity: velocity
+        }));
+      }
+    };
+
     document.getElementById("osc-ip").addEventListener("input", (e) => oscStatus.ip = e.target.value);
     document.getElementById("osc-port").addEventListener("input", (e) => oscStatus.port = parseInt(e.target.value) || 0);
     document.getElementById("osc-toggle").addEventListener("change", (e) => {
