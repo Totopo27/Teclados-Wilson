@@ -780,7 +780,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div style="flex: 1;">
                 <label style="font-size: 0.8rem; color: #ccc;">Canal MIDI</label>
                 <select id="global-midi-channel" style="width: 100%; padding: 4px; background: rgba(0,0,0,0.5); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;">
-                    ${Array.from({length: 16}, (_, i) => \`<option value="\${i+1}">\${i+1}</option>\`).join('')}
+                    ${Array.from({length: 16}, (_, i) => '<option value="' + (i+1) + '">' + (i+1) + '</option>').join('')}
                 </select>
             </div>
             <div style="flex: 1;">
