@@ -37,35 +37,52 @@ function getLocalIP() {
 const LOCAL_IP = getLocalIP();
 
 // --- Servidor HTTP (Para que el iPad pueda cargar el teclado) ---
-const server = http.createServer((req, res) => {
-    let filePath = '.' + req.url;
-    if (filePath === './') filePath = './index.html';
+const ROOT_DIR = path.resolve(__dirname);
 
-    const extname = String(path.extname(filePath)).toLowerCase();
+const server = http.createServer((req, res) => {
+    // Sanitizar y prevenir Path Traversal
+    const safeUrlPath = path.normalize(decodeURIComponent(req.url.split('?')[0]));
+    let relativePath = safeUrlPath === '/' ? 'index.html' : safeUrlPath.replace(/^(\.\.[\/\\])+/, '');
+    if (relativePath.startsWith('/') || relativePath.startsWith('\\')) {
+        relativePath = relativePath.slice(1);
+    }
+    if (!relativePath) relativePath = 'index.html';
+
+    const resolvedPath = path.resolve(ROOT_DIR, relativePath);
+
+    // Verificar contención estricta dentro del directorio raíz del proyecto
+    if (!resolvedPath.startsWith(ROOT_DIR + path.sep) && resolvedPath !== ROOT_DIR) {
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        res.end('Forbidden');
+        return;
+    }
+
+    const extname = String(path.extname(resolvedPath)).toLowerCase();
     const mimeTypes = {
-        '.html': 'text/html',
-        '.js': 'text/javascript',
-        '.css': 'text/css',
-        '.json': 'application/json',
+        '.html': 'text/html; charset=utf-8',
+        '.js': 'text/javascript; charset=utf-8',
+        '.css': 'text/css; charset=utf-8',
+        '.json': 'application/json; charset=utf-8',
         '.png': 'image/png',
         '.jpg': 'image/jpg',
         '.gif': 'image/gif',
+        '.svg': 'image/svg+xml',
     };
 
     const contentType = mimeTypes[extname] || 'application/octet-stream';
 
-    fs.readFile(filePath, (error, content) => {
+    fs.readFile(resolvedPath, (error, content) => {
         if (error) {
-            if (error.code == 'ENOENT') {
-                res.writeHead(404);
+            if (error.code === 'ENOENT' || error.code === 'EISDIR') {
+                res.writeHead(404, { 'Content-Type': 'text/plain' });
                 res.end('File not found');
             } else {
-                res.writeHead(500);
+                res.writeHead(500, { 'Content-Type': 'text/plain' });
                 res.end('Server error: ' + error.code);
             }
         } else {
             res.writeHead(200, { 'Content-Type': contentType });
-            res.end(content, 'utf-8');
+            res.end(content);
         }
     });
 });
@@ -86,6 +103,30 @@ server.listen(HTTP_PORT, '0.0.0.0', () => {
 // --- Cliente UDP para enviar paquetes a SuperCollider / Max / Surge ---
 const udpClient = dgram.createSocket('udp4');
 
+// Validación estricta de destinos UDP permitidos (localhost, loopback y subredes privadas locales)
+function isAllowedUdpHost(ip) {
+    if (!ip || typeof ip !== 'string') return false;
+    const cleanIp = ip.trim().toLowerCase();
+    if (cleanIp === 'localhost' || cleanIp === '127.0.0.1' || cleanIp === '::1') return true;
+    
+    // IPv4 private ranges (RFC 1918)
+    const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+    const match = cleanIp.match(ipv4Regex);
+    if (match) {
+        const octets = match.slice(1).map(Number);
+        if (octets.some(o => o < 0 || o > 255)) return false;
+        // 127.0.0.0/8
+        if (octets[0] === 127) return true;
+        // 10.0.0.0/8
+        if (octets[0] === 10) return true;
+        // 172.16.0.0/12
+        if (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) return true;
+        // 192.168.0.0/16
+        if (octets[0] === 192 && octets[1] === 168) return true;
+    }
+    return false;
+}
+
 // --- Servidor WebSocket (El teclado se conecta aquí) ---
 const wss = new WebSocket.Server({ port: WS_PORT });
 
@@ -97,17 +138,39 @@ wss.on('connection', (ws) => {
             const msg = JSON.parse(data);
             
             if (msg.type === 'osc') {
+                const targetPort = parseInt(msg.port, 10);
+                const targetHost = (msg.ip || '127.0.0.1').trim();
+
+                if (!targetPort || targetPort < 1 || targetPort > 65535) {
+                    console.warn(`[SECURITY] Descartado paquete OSC con puerto inválido: ${msg.port}`);
+                    return;
+                }
+
+                if (!isAllowedUdpHost(targetHost)) {
+                    console.warn(`[SECURITY BLOCKED] Intento de reenvío UDP no autorizado hacia: ${targetHost}:${targetPort}`);
+                    return;
+                }
+
+                if (!Array.isArray(msg.message) && !Buffer.isBuffer(msg.message)) {
+                    console.warn('[SECURITY] Mensaje OSC con formato de payload inválido.');
+                    return;
+                }
+
                 const buffer = Buffer.from(msg.message);
+                if (buffer.length > 65507) { // Límite máximo de payload UDP
+                    console.warn('[SECURITY] Paquete OSC excede el tamaño máximo UDP permitido.');
+                    return;
+                }
                 
-                // Enviamos el buffer binario puro por UDP al destino final
-                udpClient.send(buffer, 0, buffer.length, msg.port, msg.ip, (err) => {
+                // Enviamos el buffer binario puro por UDP al destino final validado
+                udpClient.send(buffer, 0, buffer.length, targetPort, targetHost === 'localhost' ? '127.0.0.1' : targetHost, (err) => {
                     if (err) {
                         console.error('[UDP ERROR]', err);
                     }
                 });
             } else if (msg.type === 'midi') {
                 // Reenviar evento MIDI en formato estructurado a cualquier listener o servicio midiControl
-                console.log(`[MIDI EVENT] ${msg.event.toUpperCase()} -> Ch: ${msg.channel || 1}, Nota: ${msg.note}, Vel: ${msg.velocity !== undefined ? msg.velocity : 127}`);
+                console.log(`[MIDI EVENT] ${String(msg.event).toUpperCase()} -> Ch: ${parseInt(msg.channel, 10) || 1}, Nota: ${parseInt(msg.note, 10) || 0}, Vel: ${msg.velocity !== undefined ? parseInt(msg.velocity, 10) : 127}`);
             }
         } catch (e) {
             console.error('[PROCESS ERROR]', e.message);
