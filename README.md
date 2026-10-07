@@ -64,3 +64,19 @@ Para que los teclados puedan enviar mensajes OSC a otras aplicaciones (como Supe
 ---
 
 *Nota: Las versiones actuales han sido fuertemente optimizadas para uso profesional multitáctil en iPad. Aprovechan la Unified Pointer API nativa para garantizar zoom fluido, paneo y envíos inmediatos de señales de nota, aislando el comportamiento para evitar latencia.*
+
+## Integración con Hardware y MIDI (Flujo iPad -> Eurorack)
+
+Los teclados visuales soportan ahora envío directo de notas MIDI con configuración personalizada para integrarse con hardware físico usando [midiControl](https://github.com/Totopo27/midiControl).
+
+### Topología de red
+1. El **iPad** (o cualquier dispositivo táctil) abre el teclado en el navegador apuntando al servidor web del proyecto (puerto HTTP `8080`).
+2. El teclado establece una conexión **WebSocket** (puerto `8081`) contra `midiControl`, corriendo en tu computadora principal.
+3. `midiControl` recibe los eventos y los rutea al puerto de **MIDI DIN Out** que elijas, hacia tu hardware Eurorack.
+
+### Configuración MIDI Global
+En cada teclado vas a ver un panel flotante de **"Configuración MIDI"** que permite establecer:
+- **Canal MIDI**: (1-16) el canal por el que saldrán las notas.
+- **Base Nota (Grado 0)**: Por defecto `60` (C4). Determina la nota MIDI que le corresponde a la fundamental del sistema (grado 0).
+
+Al cambiar de teclado o recargar la página, tus preferencias de MIDI se guardan localmente en tu navegador (`localStorage`), facilitando el flujo en vivo.
