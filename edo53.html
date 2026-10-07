@@ -405,11 +405,17 @@
       if (typeof window.dispatchOSC === 'function') {
         window.dispatchOSC('/allnotesoff', '', []);
       }
+      if (typeof window.dispatchMIDI === 'function') {
+        window.dispatchMIDI('panic', 0, 0);
+      }
     });
 
     document.getElementById("btn-panic-sound").addEventListener("click", () => {
       if (typeof window.dispatchOSC === 'function') {
         window.dispatchOSC('/allsoundoff', '', []);
+      }
+      if (typeof window.dispatchMIDI === 'function') {
+        window.dispatchMIDI('panic', 0, 0);
       }
     });
 
